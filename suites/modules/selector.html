@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <style>
+      :root {
+        --bg-color: #ffffff;
+        --text-main: #1f1f1f;
+        --text-sub: #444746;
+        --card-bg: #f8f9fa;
+        --input-bg: #f0f4f9;
+        --input-border: transparent;
+        --primary: #0b57d0;
+        --primary-hover: #0842a0;
+        --on-primary: #ffffff;
+        --success: #188038;
+        --error: #d93025;
+        --table-header: #eff3f8;
+        --table-border: #e3e3e3;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg-color: #1e1e1e;
+          --text-main: #e3e3e3;
+          --text-sub: #c4c7c5;
+          --card-bg: #2d2d2d;
+          --input-bg: #2d2d2d;
+          --input-border: #444746;
+          --primary: #a8c7fa;
+          --primary-hover: #d2e3fc;
+          --on-primary: #062e6f;
+          --success: #75ec9c;
+          --error: #f28b82;
+          --table-header: #353a40;
+          --table-border: #444746;
+        }
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      body {
+        font-family: 'Google Sans', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        padding: 20px;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .module-header {
+        margin-bottom: 20px;
+      }
+
+      h2 {
+        font-size: 20px;
+        font-weight: 500;
+        color: var(--primary);
+        margin-bottom: 5px;
+      }
+
+      p { color: var(--text-sub); font-size: 14px; }
+
+      .date-container {
+        background: var(--card-bg);
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      label { font-weight: 600; color: var(--text-sub); }
+
+      input[type="date"] {
+        padding: 10px 16px;
+        background: var(--input-bg);
+        border: 1px solid var(--input-border);
+        border-radius: 8px;
+        font-size: 16px;
+        color: var(--text-main);
+        font-family: inherit;
+        outline: none;
+      }
+
+      input[type="date"]:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(11, 87, 208, 0.1);
+      }
+
+      .preview-container {
+        flex-grow: 1;
+        border: 1px solid var(--table-border);
+        border-radius: 12px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        background: var(--card-bg);
+        margin-bottom: 20px;
+      }
+
+      .preview-header {
+        padding: 15px 20px;
+        background: var(--table-header);
+        border-bottom: 1px solid var(--table-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .preview-title { font-weight: 600; font-size: 14px; }
+      .preview-count { color: var(--text-sub); font-size: 13px; }
+
+      .table-wrapper {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 0;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+
+      th {
+        position: sticky;
+        top: 0;
+        background: var(--table-header);
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-sub);
+        border-bottom: 2px solid var(--table-border);
+      }
+
+      td {
+        padding: 12px;
+        border-bottom: 1px solid var(--table-border);
+        color: var(--text-main);
+      }
+
+      tr:hover { background: rgba(11, 87, 208, 0.05); }
+
+      .rol-tag {
+        display: inline-block;
+        font-size: 11px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-weight: 600;
+      }
+
+      .rol-transfer { background: #e8f0fe; color: #1967d2; }
+      .rol-asist { background: #fce8e6; color: #c5221f; }
+
+      .empty-state {
+        padding: 40px;
+        text-align: center;
+        color: var(--text-sub);
+      }
+
+      .spinner {
+        width: 24px;
+        height: 24px;
+        border: 2px solid var(--text-sub);
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 10px;
+      }
+
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      .footer {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+
+      .btn {
+        padding: 12px 24px;
+        background: var(--primary);
+        color: var(--on-primary);
+        border: none;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn:hover { background: var(--primary-hover); }
+      .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+      .btn-secondary {
+        background: transparent;
+        color: var(--primary);
+        border: 1px solid var(--primary);
+      }
+
+      .status {
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .status.success { color: var(--success); }
+      .status.error { color: var(--error); }
+    </style>
+  </head>
+  <body>
+    <div class="module-header">
+      <h2>📝 Cierre de Actividad</h2>
+      <p>Selecciona una fecha para analizar y guardar el historial diario.</p>
+    </div>
+
+    <div class="date-container">
+      <label>Fecha de análisis:</label>
+      <input type="date" id="datePicker" onchange="checkPreview()">
+    </div>
+
+    <div class="preview-container">
+      <div class="preview-header">
+        <span class="preview-title">Vista previa de registros</span>
+        <span class="preview-count" id="previewCount">-- registros</span>
+      </div>
+      <div class="table-wrapper" id="tableWrapper">
+        <div class="empty-state">
+          Selecciona una fecha para ver los registros disponibles.
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <button id="saveBtn" onclick="guardar()" disabled>
+        <span>💾 Guardar en Historial</span>
+      </button>
+      <div class="status" id="status"></div>
+    </div>
+
+    <script>
+      // ===== INTEGRACIÓN CON SUITES =====
+      let SUITES_USER = null;
+      try {
+        if (window.parent && window.parent.SUITES_SESSION) {
+          SUITES_USER = window.parent.SUITES_SESSION;
+        }
+      } catch(e) {}
+
+      // ===== INICIALIZACIÓN =====
+      window.onload = function() {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        document.getElementById('datePicker').value = `${yyyy}-${mm}-${dd}`;
+        checkPreview();
+      };
+
+      // ===== CARGAR VISTA PREVIA =====
+      function checkPreview() {
+        const fecha = document.getElementById('datePicker').value;
+        const wrapper = document.getElementById('tableWrapper');
+        const countLabel = document.getElementById('previewCount');
+        const saveBtn = document.getElementById('saveBtn');
+        const status = document.getElementById('status');
+
+        if (!fecha) return;
+
+        wrapper.innerHTML = '<div class="empty-state"><div class="spinner"></div>Analizando llamadas...</div>';
+        countLabel.textContent = "Cargando...";
+        saveBtn.disabled = true;
+        status.textContent = "";
+        status.className = "status";
+
+        google.script.run
+          .withSuccessHandler(function(res) {
+            if (res.error) {
+              wrapper.innerHTML = `<div class="empty-state" style="color:var(--error)">${res.mensaje}</div>`;
+              countLabel.textContent = "Error";
+              return;
+            }
+
+            const datos = res.datos || [];
+            if (datos.length === 0) {
+              wrapper.innerHTML = '<div class="empty-state">No hay datos para esta fecha.</div>';
+              countLabel.textContent = "0 registros";
+            } else {
+              renderTable(datos);
+              countLabel.textContent = `${datos.length} registros`;
+              saveBtn.disabled = false;
+            }
+          })
+          .withFailureHandler(function(err) {
+            wrapper.innerHTML = `<div class="empty-state" style="color:var(--error)">Error de conexión</div>`;
+            countLabel.textContent = "Error";
+          })
+          .SUITES_previewDailyData(fecha);
+      }
+
+      // ===== RENDERIZAR TABLA =====
+      function renderTable(rows) {
+        let html = `<table>
+          <thead>
+            <tr>
+              <th>Operador</th>
+              <th>Extensión</th>
+              <th>Servicio</th>
+              <th>Llamadas</th>
+              <th>Conv / Min</th>
+              <th>Ratio / Media</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+        rows.forEach(row => {
+          const rolClass = row[3] === 'Transfer' ? 'rol-transfer' : 'rol-asist';
+          const opName = row[1] ? `<b>${row[1]}</b>` : '<i style="opacity:0.5">Sin asignar</i>';
+
+          html += `<tr>
+            <td>${opName}</td>
+            <td>${row[2]}</td>
+            <td><span class="rol-tag ${rolClass}">${row[3]}</span></td>
+            <td>${row[4]}</td>
+            <td>${row[5]}</td>
+            <td>${row[6]}</td>
+          </tr>`;
+        });
+
+        html += '</tbody></table>';
+        document.getElementById('tableWrapper').innerHTML = html;
+      }
+
+      // ===== GUARDAR =====
+      function guardar() {
+        const fecha = document.getElementById('datePicker').value;
+        const btn = document.getElementById('saveBtn');
+        const status = document.getElementById('status');
+
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Guardando...';
+
+        google.script.run
+          .withSuccessHandler(function(msg) {
+            status.textContent = "✅ " + msg;
+            status.className = "status success";
+            btn.innerHTML = '<span>💾 Guardar en Historial</span>';
+            
+            setTimeout(() => {
+              btn.disabled = false;
+              status.textContent = "";
+            }, 3000);
+          })
+          .withFailureHandler(function(err) {
+            status.textContent = "❌ Error: " + err.message;
+            status.className = "status error";
+            btn.innerHTML = '<span>💾 Guardar en Historial</span>';
+            btn.disabled = false;
+          })
+          .SUITES_saveDailyData(fecha);
+      }
+    </script>
+  </body>
+</html>

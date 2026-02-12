@@ -1,66 +1,571 @@
 <!DOCTYPE html>
-<html>
-  <head>
+<html lang="es">
+<head>
     <base target="_top">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suites - Portal de Operaciones</title>
     <style>
-      :root {
-        /* Light Mode Colors (Gemini inspired) */
-        --bg-color: #ffffff;
-        --text-color: #1f1f1f;
-        --card-bg: #f8f9fa;
-        --card-border: #e3e3e3;
-        --primary: #1a73e8; /* Azul para Facilitadores */
-        --accent: #d93025; /* Rojo para Asistentes */
-        --success: #188038;
-        --warning: #f9ab00;
-        --nav-bg: #f1f3f4;
-        --nav-active: #ffffff;
-        --nav-text: #5f6368;
-        --shadow: 0 2px 6px rgba(0,0,0,0.05);
-      }
-
-      @media (prefers-color-scheme: dark) {
+        /* ===== SISTEMA DE DISEÑO UNIFICADO ===== */
         :root {
-          /* Dark Mode Colors */
-          --bg-color: #1e1e1e;
-          --text-color: #e3e3e3;
-          --card-bg: #2d2d2d;
-          --card-border: #444;
-          --primary: #8ab4f8;
-          --accent: #f28b82;
-          --success: #81c995;
-          --warning: #fcd457;
-          --nav-bg: #2d2d2d;
-          --nav-active: #3c4043;
-          --nav-text: #9aa0a6;
-          --shadow: 0 4px 8px rgba(0,0,0,0.3);
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-card: #0f3460;
+            --accent: #e94560;
+            --text-primary: #eaeaea;
+            --text-secondary: #a0a0a0;
+            --success: #16c79a;
+            --warning: #f9a825;
+            
+            --radius: 12px;
+            --shadow: 0 8px 32px rgba(0,0,0,0.3);
+            --transition: all 0.3s ease;
         }
-      }
 
-      body {
-        font-family: 'Google Sans', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        padding: 0;
-        margin: 0;
-        background-color: var(--bg-color);
-        color: var(--text-color);
-        transition: background-color 0.3s, color 0.3s;
-        font-size: 14px;
-        overflow-y: auto; 
-      }
-
-      /* HEADER & TABS */
-      header {
-        padding: 15px;
-        border-bottom: 1px solid var(--card-border);
-        background: linear-gradient(90deg, rgba(26,115,232,0.05) 0%, rgba(255,255,255,0) 100%);
-        position: sticky; top: 0; z-index: 10;
-        background-color: var(--bg-color);
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
-        /* Layout Flex para botón de refresh */
-        display: flex; 
-        justify-content: space-between; 
-        align-items: center;
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* ===== LOGIN SCREEN ===== */
+        #login-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-primary);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        
+        .login-card {
+            background: var(--bg-card);
+            padding: 40px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            width: 90%; max-width: 400px;
+            text-align: center;
+        }
+        
+        .login-card h1 { margin-bottom: 10px; color: var(--accent); }
+        .login-card p { color: var(--text-secondary); margin-bottom: 30px; }
+        
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 16px;
+            transition: var(--transition);
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(233, 69, 96, 0.4);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ===== MAIN APP ===== */
+        #app { display: none; }
+        
+        /* Header */
+        .header {
+            background: var(--bg-card);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        
+        .logo { font-size: 24px; font-weight: 700; color: var(--accent); }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-name { color: var(--text-secondary); font-size: 14px; }
+        
+        .btn-logout {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .btn-logout:hover { background: var(--accent); color: white; }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            background: var(--bg-secondary);
+            padding: 0 30px;
+            gap: 5px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .nav-tab {
+            padding: 15px 25px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .nav-tab:hover { color: var(--text-primary); }
+        
+        .nav-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            background: rgba(233, 69, 96, 0.1);
+        }
+
+        /* Content Area */
+        .content-area {
+            padding: 30px;
+            height: calc(100vh - 120px);
+            overflow: hidden;
+        }
+        
+        .tab-panel {
+            display: none;
+            height: 100%;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .tab-panel.active { display: block; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Iframe Container */
+        .iframe-container {
+            width: 100%;
+            height: 100%;
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        
+        .iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+
+        /* Upload Zone (NUEVO) */
+        .upload-zone {
+            border: 3px dashed var(--accent);
+            border-radius: var(--radius);
+            padding: 60px;
+            text-align: center;
+            background: rgba(233, 69, 96, 0.05);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        
+        .upload-zone:hover, .upload-zone.dragover {
+            background: rgba(233, 69, 96, 0.1);
+            transform: scale(1.02);
+        }
+        
+        .upload-icon { font-size: 48px; margin-bottom: 20px; }
+        .upload-text { font-size: 18px; margin-bottom: 10px; }
+        .upload-hint { color: var(--text-secondary); font-size: 14px; }
+        
+        .file-input { display: none; }
+        
+        .upload-progress {
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Messages */
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .message.error { background: rgba(233, 69, 96, 0.2); color: #ff6b6b; }
+        .message.success { background: rgba(22, 199, 154, 0.2); color: var(--success); }
+        .message.show { display: block; }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen">
+        <div class="login-card">
+            <h1>🔐 Suites</h1>
+            <p>Portal de Operaciones y Análisis</p>
+            
+            <div id="login-message" class="message"></div>
+            
+            <div class="input-group">
+                <label for="username">Usuario</label>
+                <input type="text" id="username" placeholder="Tu usuario">
+            </div>
+            
+            <div class="input-group">
+                <label for="password">Contraseña</label>
+                <input type="password" id="password" placeholder="••••••">
+            </div>
+            
+            <button class="btn-primary" id="btn-login" onclick="login()">
+                Ingresar
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="app">
+        <header class="header">
+            <div class="logo">🔐 Suites</div>
+            <div class="user-info">
+                <span class="user-name" id="user-display">Usuario</span>
+                <button class="btn-logout" onclick="logout()">Salir</button>
+            </div>
+        </header>
+
+        <nav class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('dashboard')">
+                📊 Dashboard
+            </button>
+            <button class="nav-tab" onclick="switchTab('mensual')">
+                📈 Panel Mensual
+            </button>
+            <button class="nav-tab" onclick="switchTab('selector')">
+                📝 Date Selector
+            </button>
+            <button class="nav-tab" onclick="switchTab('upload')">
+                📤 Cargar Datos
+            </button>
+        </nav>
+
+        <main class="content-area">
+            <!-- Tab: Dashboard -->
+            <div id="tab-dashboard" class="tab-panel active">
+                <div class="iframe-container">
+                    <iframe id="iframe-dashboard" src="about:blank"></iframe>
+                </div>
+            </div>
+
+            <!-- Tab: Panel Mensual -->
+            <div id="tab-mensual" class="tab-panel">
+                <div class="iframe-container">
+                    <iframe id="iframe-mensual" src="about:blank"></iframe>
+                </div>
+            </div>
+
+            <!-- Tab: Date Selector -->
+            <div id="tab-selector" class="tab-panel">
+                <div class="iframe-container">
+                    <iframe id="iframe-selector" src="about:blank"></iframe>
+                </div>
+            </div>
+
+            <!-- Tab: Cargar Datos (NUEVO) -->
+            <div id="tab-upload" class="tab-panel">
+                <div id="upload-message" class="message"></div>
+                
+                <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">Arrastra archivos aquí o haz clic para seleccionar</div>
+                    <div class="upload-hint">Soporta: .csv, .xlsx, .xls</div>
+                    <input type="file" id="file-input" class="file-input" accept=".csv,.xlsx,.xls" onchange="handleFileSelect(event)">
+                </div>
+                
+                <div class="upload-progress" id="upload-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <p style="text-align: center; margin-top: 10px; color: var(--text-secondary);" id="progress-text">Procesando...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ===== ESTADO DE LA APLICACIÓN =====
+        let currentUser = null;
+        let currentTab = 'dashboard';
+
+        // ===== AUTENTICACIÓN =====
+        function login() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('btn-login');
+            const msg = document.getElementById('login-message');
+            
+            if (!username || !password) {
+                showMessage(msg, 'Por favor completa todos los campos', 'error');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = 'Verificando...';
+            
+            // Llamar a GAS para validar
+            google.script.run
+                .withSuccessHandler(response => {
+                    const data = JSON.parse(response);
+                    if (data.success) {
+                        currentUser = { username: username, role: data.role };
+                        document.getElementById('user-display').textContent = username;
+                        showApp();
+                    } else {
+                        showMessage(msg, 'Usuario o contraseña incorrectos', 'error');
+                        btn.disabled = false;
+                        btn.textContent = 'Ingresar';
+                    }
+                })
+                .withFailureHandler(error => {
+                    showMessage(msg, 'Error de conexión: ' + error.message, 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Ingresar';
+                })
+                .AUTH_validateUser(JSON.stringify({ username, password }));
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('app').style.display = 'none';
+            // Limpiar iframes por seguridad
+            ['dashboard', 'mensual', 'selector'].forEach(id => {
+                document.getElementById('iframe-' + id).src = 'about:blank';
+            });
+        }
+
+        function showApp() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            loadTabContent('dashboard');
+        }
+
+        // ===== NAVEGACIÓN =====
+        function switchTab(tabName) {
+            // Actualizar botones
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Actualizar paneles
+            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            
+            currentTab = tabName;
+            
+            // Cargar contenido si es necesario
+            if (tabName !== 'upload') {
+                loadTabContent(tabName);
+            }
+        }
+
+        function loadTabContent(tabName) {
+            const iframe = document.getElementById('iframe-' + tabName);
+            // Aquí cargamos el HTML específico de cada módulo
+            // Por ahora usamos srcdoc o cargamos desde GAS
+            const htmlContent = getModuleHTML(tabName);
+            iframe.srcdoc = htmlContent;
+        }
+
+        function getModuleHTML(module) {
+            // Esto se conectará con tus HTML existentes
+            // Por ahora, placeholder
+            const placeholders = {
+                dashboard: '<h1 style="color:black; padding:20px;">Dashboard KPIs - Cargando...</h1>',
+                mensual: '<h1 style="color:black; padding:20px;">Panel Mensual - Cargando...</h1>',
+                selector: '<h1 style="color:black; padding:20px;">Date Selector - Cargando...</h1>'
+            };
+            return placeholders[module] || '<h1>Módulo no encontrado</h1>';
+        }
+
+        // ===== CARGA DE ARCHIVOS (NUEVO) =====
+        const uploadZone = document.getElementById('upload-zone');
+        
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        });
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                processFile(file);
+            }
+        }
+
+        function processFile(file) {
+            const msg = document.getElementById('upload-message');
+            const progress = document.getElementById('upload-progress');
+            const progressFill = document.getElementById('progress-fill');
+            const progressText = document.getElementById('progress-text');
+            
+            // Validar extensión
+            const validExtensions = ['.csv', '.xlsx', '.xls'];
+            const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+            if (!validExtensions.includes(ext)) {
+                showMessage(msg, 'Formato no válido. Usa: CSV, XLSX o XLS', 'error');
+                return;
+            }
+            
+            // Mostrar progreso
+            progress.style.display = 'block';
+            progressFill.style.width = '30%';
+            progressText.textContent = 'Leyendo archivo...';
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                progressFill.style.width = '60%';
+                progressText.textContent = 'Procesando datos...';
+                
+                const content = e.target.result;
+                
+                // Enviar a GAS para procesar y escribir en Sheet
+                google.script.run
+                    .withSuccessHandler(response => {
+                        const data = JSON.parse(response);
+                        progressFill.style.width = '100%';
+                        
+                        if (data.success) {
+                            showMessage(msg, `✅ ${data.message}`, 'success');
+                            setTimeout(() => {
+                                progress.style.display = 'none';
+                                progressFill.style.width = '0%';
+                            }, 2000);
+                        } else {
+                            showMessage(msg, `❌ Error: ${data.message}`, 'error');
+                            progress.style.display = 'none';
+                        }
+                    })
+                    .withFailureHandler(error => {
+                        showMessage(msg, `❌ Error: ${error.message}`, 'error');
+                        progress.style.display = 'none';
+                    })
+                    .UPLOAD_processFile({
+                        filename: file.name,
+                        content: content,
+                        type: ext,
+                        user: currentUser.username
+                    });
+            };
+            
+            reader.onerror = function() {
+                showMessage(msg, 'Error al leer el archivo', 'error');
+                progress.style.display = 'none';
+            };
+            
+            // Leer como texto base64 para binarios o texto plano
+            if (ext === '.csv') {
+                reader.readAsText(file);
+            } else {
+                reader.readAsDataURL(file); // Base64 para Excel
+            }
+        }
+
+        // ===== UTILIDADES =====
+        function showMessage(element, text, type) {
+            element.textContent = text;
+            element.className = 'message ' + type + ' show';
+            setTimeout(() => {
+                element.classList.remove('show');
+            }, 5000);
+        }
+
+        // Enter en inputs de login
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') login();
+        });
+    </script>
+</body>
+</html>        align-items: center;
       }
       
       .header-titles {

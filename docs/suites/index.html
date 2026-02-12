@@ -1,0 +1,1601 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      :root {
+        /* Light Mode Colors (Gemini inspired) */
+        --bg-color: #ffffff;
+        --text-color: #1f1f1f;
+        --card-bg: #f8f9fa;
+        --card-border: #e3e3e3;
+        --primary: #1a73e8; /* Azul para Facilitadores */
+        --accent: #d93025; /* Rojo para Asistentes */
+        --success: #188038;
+        --warning: #f9ab00;
+        --nav-bg: #f1f3f4;
+        --nav-active: #ffffff;
+        --nav-text: #5f6368;
+        --shadow: 0 2px 6px rgba(0,0,0,0.05);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          /* Dark Mode Colors */
+          --bg-color: #1e1e1e;
+          --text-color: #e3e3e3;
+          --card-bg: #2d2d2d;
+          --card-border: #444;
+          --primary: #8ab4f8;
+          --accent: #f28b82;
+          --success: #81c995;
+          --warning: #fcd457;
+          --nav-bg: #2d2d2d;
+          --nav-active: #3c4043;
+          --nav-text: #9aa0a6;
+          --shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+      }
+
+      body {
+        font-family: 'Google Sans', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        padding: 0;
+        margin: 0;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        transition: background-color 0.3s, color 0.3s;
+        font-size: 14px;
+        overflow-y: auto; 
+      }
+
+      /* HEADER & TABS */
+      header {
+        padding: 15px;
+        border-bottom: 1px solid var(--card-border);
+        background: linear-gradient(90deg, rgba(26,115,232,0.05) 0%, rgba(255,255,255,0) 100%);
+        position: sticky; top: 0; z-index: 10;
+        background-color: var(--bg-color);
+        
+        /* Layout Flex para botón de refresh */
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center;
+      }
+      
+      .header-titles {
+          display: flex; flex-direction: column;
+      }
+
+      h2 { margin: 0; font-size: 18px; font-weight: 500; color: var(--primary); }
+      p.subtitle { margin: 2px 0 0; font-size: 12px; color: var(--nav-text); }
+
+      /* HEADER CONTROLS (REFRESH) */
+      .header-controls {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+      }
+      .last-update {
+          font-size: 11px;
+          color: var(--nav-text);
+          text-align: right;
+      }
+      .refresh-btn {
+          background-color: var(--nav-bg);
+          border: 1px solid var(--card-border);
+          color: var(--primary);
+          padding: 8px 12px;
+          border-radius: 20px;
+          cursor: pointer;
+          font-size: 14px;
+          transition: all 0.2s;
+          display: flex; align-items: center; gap: 5px;
+      }
+      .refresh-btn:hover {
+          background-color: var(--primary);
+          color: white;
+          box-shadow: 0 2px 5px rgba(26, 115, 232, 0.3);
+      }
+      .refresh-btn:active {
+          transform: scale(0.95);
+      }
+
+      .tabs {
+        display: flex; background-color: var(--nav-bg); padding: 5px; margin: 10px 15px;
+        border-radius: 8px; gap: 5px; position: sticky; top: 60px; z-index: 5;
+        box-shadow: var(--shadow);
+        overflow-x: auto; /* Permite scroll horizontal en caso de muchas pestañas */
+      }
+      .tab-btn {
+        flex-shrink: 0; padding: 8px; border: none; background: transparent;
+        color: var(--nav-text); font-size: 12px; font-weight: 500;
+        border-radius: 6px; cursor: pointer; transition: all 0.2s;
+      }
+      .tab-btn.active {
+        background-color: var(--nav-active); color: var(--primary);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1); font-weight: 600;
+      }
+
+      /* CONTENT & CARDS */
+      .tab-content { display: none; padding: 0 15px 15px 15px; animation: fadeIn 0.3s ease; }
+      .tab-content.active { display: block; }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+      .card {
+        background: var(--card-bg); padding: 15px; border-radius: 12px;
+        border: 1px solid var(--card-border); box-shadow: var(--shadow);
+        margin-bottom: 15px;
+      }
+      .card-title {
+        font-size: 13px; font-weight: 600; margin-bottom: 10px;
+        color: var(--nav-text); text-transform: uppercase; letter-spacing: 0.5px;
+      }
+      
+      .text-success { color: var(--success) !important; }
+      .text-danger { color: var(--accent) !important; }
+      .text-warning { color: var(--warning) !important; }
+
+      /* TABLES */
+      .table-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+      .table-options { display: flex; flex-wrap: wrap; gap: 15px; font-size: 11px; margin-top: 5px; }
+      .mini-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+      .mini-table th { 
+        text-align: left; color: var(--nav-text); padding: 8px 5px; 
+        border-bottom: 2px solid var(--primary); 
+        cursor: pointer; /* Para el ordenamiento */
+        position: sticky; top: 0; background: var(--card-bg); z-index: 2;
+        transition: background-color 0.2s;
+        user-select: none; /* Evitar selección de texto al hacer clic */
+      }
+      .mini-table th:hover { background-color: rgba(0,0,0,0.05); }
+      .mini-table td { padding: 6px 5px; border-bottom: 1px solid var(--card-border); }
+      .mini-table tr:last-child td { border-bottom: none; }
+      .table-container { max-height: 500px; overflow-y: auto; }
+      
+      .clickable-row { cursor: pointer; transition: background 0.2s; }
+      .clickable-row:hover { background-color: rgba(0,0,0,0.03); }
+      
+      .clickable-name:hover {
+          color: var(--primary);
+          text-decoration: underline;
+          cursor: pointer;
+      }
+
+      /* SORT ICON */
+      .sort-icon { margin-left: 5px; font-size: 10px; vertical-align: middle; display: inline-block; width: 10px; }
+      
+      /* CHART CONTAINERS & REBOTES RANKING */
+      .chart-container { max-height: 400px; width: 100%; margin: 15px 0; }
+      .rebotes-ranking-grid {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; 
+        max-height: 350px; overflow-y: auto;
+      }
+      .ranking-item {
+        background: rgba(217, 48, 37, 0.05); /* Ligeramente rojo */
+        padding: 8px; border-radius: 6px;
+        border: 1px solid rgba(217, 48, 37, 0.2);
+      }
+      .ranking-item-agente { font-weight: 600; font-size: 12px; color: var(--accent); }
+      .ranking-item-tasa { font-size: 18px; font-weight: 700; margin-top: 2px; }
+      .ranking-item-lbl { font-size: 10px; color: var(--nav-text); }
+      
+      /* LOADING */
+      .loading-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: var(--bg-color);
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        z-index: 100;
+      }
+      .spinner {
+        width: 30px; height: 30px; border: 3px solid var(--card-border);
+        border-top-color: var(--primary); border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 10px;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      
+      /* Efficiency Tab Styles */
+      .efficiency-grid {
+        display: grid; grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      .metric-box-small {
+        padding: 10px; border-radius: 8px; text-align: center; border: 1px solid var(--card-border);
+      }
+      .score-breakdown-table {
+        width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 15px;
+      }
+      .score-breakdown-table th, .score-breakdown-table td {
+        padding: 6px; border: 1px solid var(--card-border); text-align: left;
+      }
+      .score-breakdown-table th { background-color: var(--nav-bg); color: var(--primary); }
+      
+      /* Global Metrics Grid */
+      .global-metrics-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr); /* 4 columnas como en el ejemplo */
+          gap: 10px;
+          margin-top: 15px;
+      }
+      /* Nueva estructura de 4x2 para separar 807 y 91 */
+      .metric-section-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr); 
+          gap: 10px;
+          margin-top: 15px;
+          border-top: 1px solid var(--card-border);
+          padding-top: 15px;
+      }
+
+      .metric-card {
+          background: var(--card-bg);
+          padding: 10px 15px;
+          border-radius: 8px;
+          border: 1px solid var(--card-border);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      }
+      .metric-label {
+          font-size: 11px;
+          color: var(--nav-text);
+          margin-bottom: 2px;
+          line-height: 1.2;
+      }
+      .metric-value {
+          font-size: 18px;
+          font-weight: 700;
+          color: var(--text-color);
+          line-height: 1.2;
+      }
+      .section-header {
+        font-size: 14px;
+        font-weight: 600;
+        margin-top: 15px;
+        color: var(--primary);
+        border-bottom: 1px dashed var(--card-border);
+        padding-bottom: 5px;
+      }
+
+      /* ALERT MODAL (NUEVO) */
+      .modal-overlay {
+          position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+          background: rgba(0,0,0,0.5);
+          display: none; /* Oculto por defecto */
+          align-items: center; justify-content: center;
+          z-index: 200;
+          animation: fadeIn 0.3s ease;
+      }
+      .modal-box {
+          background: var(--bg-color);
+          padding: 25px;
+          border-radius: 12px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+          text-align: center;
+          max-width: 400px; /* Ancho para la lista de numeros */
+          width: 90%;
+          border: 1px solid var(--card-border);
+      }
+      /* MODAL GRANDE PARA HISTORIAL */
+      .modal-box-large {
+          max-width: 800px;
+          width: 95%;
+          height: auto;
+          max-height: 90vh;
+      }
+
+      .modal-btn {
+          margin-top: 15px;
+          background-color: var(--primary);
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-weight: 600;
+      }
+      .modal-btn:hover { background-color: #155db1; }
+      
+      .copy-area {
+          width: 100%;
+          height: 150px;
+          margin-top: 10px;
+          padding: 10px;
+          background: var(--nav-bg);
+          border: 1px solid var(--card-border);
+          border-radius: 6px;
+          overflow-y: auto;
+          font-family: monospace;
+          font-size: 12px;
+          text-align: left;
+          white-space: pre-line; /* Mantiene saltos de linea */
+      }
+      
+    </style>
+  </head>
+  <body>
+
+    <div id="loading" class="loading-overlay">
+      <div class="spinner"></div>
+      <div style="color: var(--nav-text);">Analizando Datos...</div>
+    </div>
+
+    <!-- AUDIO ELEMENT PARA LA ALERTA -->
+    <audio id="alertAudio" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+
+    <!-- MODAL DE ALERTA DE ACTUALIZACIÓN -->
+    <div id="alertModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 style="margin-top:0; color:var(--warning);">⚠️ Datos Antiguos</h3>
+            <p>Han pasado 30 minutos desde la última actualización.</p>
+            <p style="font-size:12px; color:var(--nav-text);">Por favor, refresca para ver la actividad reciente.</p>
+            <button class="modal-btn" onclick="manualRefresh()">🔄 Actualizar Ahora</button>
+        </div>
+    </div>
+
+    <!-- MODAL DE NUMEROS COLGADOS (NUEVO) -->
+    <div id="colgadosModal" class="modal-overlay">
+        <div class="modal-box" style="text-align: left;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0; color:var(--accent);" id="colgadosModalTitle">Llamadas Colgadas</h3>
+                <span style="cursor:pointer; font-size:20px;" onclick="closeColgadosModal()">&times;</span>
+            </div>
+            <p style="font-size:12px; color:var(--nav-text); margin-bottom:5px;">Números de teléfono colgados por este agente:</p>
+            
+            <div id="colgadosList" class="copy-area">
+                <!-- Lista de numeros -->
+            </div>
+            
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                 <button class="modal-btn" style="background-color: var(--nav-text);" onclick="closeColgadosModal()">Cerrar</button>
+                 <button class="modal-btn" onclick="copyColgadosToClipboard()">📋 Copiar Lista</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE HISTORIAL SEMANAL (NUEVO) -->
+    <div id="historyModal" class="modal-overlay">
+        <div class="modal-box modal-box-large" style="text-align: left;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0; color:var(--primary);">📅 Historial Semanal (Media Minutos)</h3>
+                <span style="cursor:pointer; font-size:20px;" onclick="document.getElementById('historyModal').style.display='none'">&times;</span>
+            </div>
+            <div id="historyAgentName" style="font-size: 14px; font-weight: bold; color: var(--nav-text); margin-bottom: 10px;"></div>
+            
+            <div class="chart-container" style="height: 300px; position: relative;">
+                <div id="historyLoader" style="position: absolute; top:50%; left:50%; transform:translate(-50%, -50%); display:none;">
+                    <div class="spinner"></div>
+                </div>
+                <canvas id="historyChart"></canvas>
+            </div>
+            
+            <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+                 <!-- BOTÓN DE DEBUG AGREGADO -->
+                 <button class="modal-btn" style="background-color: #fbbc04; color: #202124; margin-right: 10px;" onclick="showDebugInfo()">🐞 Debug Info</button>
+                 
+                 <button class="modal-btn" style="background-color: var(--nav-text);" onclick="document.getElementById('historyModal').style.display='none'">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <header>
+      <div class="header-titles">
+          <h2>✨ Análisis de CRM</h2>
+          <p class="subtitle">Rendimiento, Conversiones y Calidad</p>
+      </div>
+      
+      <!-- CONTROLES DE ACTUALIZACIÓN Y HORA -->
+      <div class="header-controls">
+          <div class="last-update">
+              <div>Última actualización:</div>
+              <strong id="lastUpdateClock">--:--</strong>
+          </div>
+          <button class="refresh-btn" onclick="manualRefresh()" title="Refrescar Datos">
+              🔄 Refrescar
+          </button>
+      </div>
+    </header>
+
+    <!-- TABS NAVIGATION -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="openTab('tab5')">Métricas</button>
+      <button class="tab-btn" onclick="openTab('tab1')">Conversión</button>
+      <button class="tab-btn" onclick="openTab('tab2')">Global</button>
+      
+      <!-- PESTAÑAS OCULTAS POR SOLICITUD -->
+      <!--
+      <button class="tab-btn" onclick="openTab('tab6')">Conv. x Hora</button>
+      <button class="tab-btn" onclick="openTab('tab7')">Quién Colgó</button>
+      <button class="tab-btn" onclick="openTab('tab3')">Rebotes</button>
+      <button class="tab-btn" onclick="openTab('tab4')">Eficiencia</button>
+      -->
+    </div>
+
+    <!-- TAB 5: MÉTRICAS GLOBALES -->
+    <div id="tab5" class="tab-content active">
+        <div class="card">
+            <div class="card-title">Resumen de Métricas Globales</div>
+            <div id="globalMetricsContainer">
+                <!-- Se llenará con JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 1: RESUMEN DE CONVERSIÓN -->
+    <div id="tab1" class="tab-content">
+        <!-- Contenido de Resumen Ejecutivo -->
+        <div class="card">
+            <div class="card-title" style="color: var(--primary);">🔷 Facilitadores (Transfer)</div>
+            <div class="metrics-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="metric-box-small">
+                <div id="resFacTotal" class="metric-val" style="font-size: 20px; font-weight: 700;">0</div>
+                <div class="metric-lbl" style="font-size: 11px; color: var(--nav-text);">Pases Intentados</div>
+              </div>
+              <div class="metric-box-small">
+                <div id="resFacConv" class="metric-val text-success" style="font-size: 20px; font-weight: 700;">0</div>
+                <div class="metric-lbl" style="font-size: 11px; color: var(--nav-text);">Conversiones (Ventas)</div>
+              </div>
+            </div>
+            <div style="margin-top:10px; text-align:center;">
+              <span style="font-size:12px; color:var(--nav-text);">Tasa de Conversión Agentes Global: </span>
+              <strong id="resFacRate" style="font-size:14px;">0%</strong>
+            </div>
+          </div>
+    
+          <div class="card">
+            <div class="card-title" style="color: var(--accent);">🔶 Asistentes (Cierre / Calidad)</div>
+            <div class="metrics-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="metric-box-small">
+                <div id="resAsistTotal" class="metric-val" style="font-size: 20px; font-weight: 700;">0</div>
+                <div class="metric-lbl" style="font-size: 11px; color: var(--nav-text);">Llamadas Asist.</div>
+              </div>
+              <div class="metric-box-small">
+                <div id="resAsistBypass" class="metric-val text-danger" style="font-size: 20px; font-weight: 700;">0</div>
+                <div class="metric-lbl" style="font-size: 11px; color: var(--nav-text);">Fugas / Bypass</div>
+              </div>
+            </div>
+            <div style="margin-top:10px; text-align:center; display:flex; justify-content:space-around;">
+                <div>
+                  <div id="resAbandonos" class="metric-val" style="font-size:16px;">0</div>
+                  <div class="metric-lbl" style="font-size: 11px; color: var(--nav-text);">Abandonos</div>
+                </div>
+            </div>
+          </div>
+    </div>
+
+    <!-- TAB 2: DETALLE GLOBAL -->
+    <div id="tab2" class="tab-content">
+      
+      <!-- Botones de Control de Visibilidad -->
+      <div class="card" style="padding: 10px; display: flex; gap: 10px; justify-content: flex-end;">
+          <button class="tab-btn" style="background-color: var(--accent); color: white;" onclick="hideSelectedAgents()">Ocultar Seleccionados</button>
+          <button class="tab-btn" style="background-color: var(--success); color: white;" onclick="showAllAgents()">Mostrar Todos</button>
+      </div>
+      
+      <!-- Tabla 1: FACILITADORES (TRANSFER) -->
+      <div class="card">
+        <div class="table-header">
+          <div class="card-title" style="color: var(--primary); margin-bottom: 0;">🔷 Rendimiento de Transfer (Facilitadores)</div>
+          <div class="table-options">
+            <span>Mostrar/Ocultar:</span>
+            <label><input type="checkbox" data-col="Transfer-Llamadas" checked> Recibidas</label>
+            <label><input type="checkbox" data-col="Transfer-Conv-R" checked> Conv (R)</label>
+            <label><input type="checkbox" data-col="Transfer-Ratio-R" checked> Ratio (R)</label>
+            <label><input type="checkbox" data-col="Transfer-Conv-F" checked> Conv (F)</label>
+            <label><input type="checkbox" data-col="Transfer-Ratio-F" checked> Ratio (F)</label>
+            <label><input type="checkbox" data-col="Transfer-Eficiencia"> Puntaje Eficiencia</label>
+            <!-- Checkbox Nuevo para Contestadas -->
+            <label><input type="checkbox" data-col="Transfer-Contestadas" checked> Contestadas</label>
+          </div>
+        </div>
+        <div class="table-container"> 
+          <table class="mini-table" id="tableFacilitadores">
+            <thead>
+              <tr id="tableFacilitadoresHeaders">
+                <th style="width: 30px;">#</th>
+                <th data-field="name">Agente <span class="sort-icon"></span></th>
+                <th data-field="recibidas" data-col="Transfer-Llamadas">Recibidas <span class="sort-icon"></span></th>
+                
+                <!-- Columnas REALES -->
+                <th data-field="convReales" data-col="Transfer-Conv-R">Conv (R) <span class="sort-icon"></span></th>
+                <th data-field="ratioReal" data-col="Transfer-Ratio-R">Ratio (R) <span class="sort-icon"></span></th>
+                
+                <!-- Columnas FACTURABLES -->
+                <th data-field="convGeneradas" data-col="Transfer-Conv-F">Conv (F) <span class="sort-icon"></span></th>
+                <th data-field="ratioFacturable" data-col="Transfer-Ratio-F">Ratio (F) <span class="sort-icon"></span></th>
+
+                <th data-field="eficaciaScore" data-col="Transfer-Eficiencia">Puntaje Eficiencia <span class="sort-icon"></span></th>
+                
+                <!-- Nueva Columna al final -->
+                <th data-field="contestadas" data-col="Transfer-Contestadas">Contestadas <span class="sort-icon"></span></th>
+              </tr>
+            </thead>
+            <tbody id="tableFacilitadoresBody">
+              <!-- JS llenará esto -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tabla 2: ASISTENTES -->
+      <div class="card">
+        <div class="table-header">
+          <div class="card-title" style="color: var(--accent); margin-bottom: 0;">🔶 Rendimiento de Asistentes</div>
+          <div class="table-options">
+            <span>Mostrar/Ocultar:</span>
+            <label><input type="checkbox" data-col="Asistente-Contestadas" checked> Llamadas</label>
+            <label><input type="checkbox" data-col="Asistente-Duracion"> Total Minutos</label>
+            <label><input type="checkbox" data-col="Asistente-Media" checked> Media Minutos</label>
+            <label><input type="checkbox" data-col="Asistente-Fugas" checked> Fugas</label>
+            <label><input type="checkbox" data-col="Asistente-Eficiencia"> Puntaje Eficiencia</label>
+          </div>
+        </div>
+        <div class="table-container"> 
+          <table class="mini-table" id="tableAsistentes">
+            <thead>
+              <tr id="tableAsistentesHeaders">
+                <th style="width: 30px;">#</th>
+                <th data-field="name">Agente (Click Historial) <span class="sort-icon"></span></th>
+                <th data-field="contestadas" data-col="Asistente-Contestadas">Llamadas Contestadas <span class="sort-icon"></span></th>
+                <th data-field="totalMinutos" data-col="Asistente-Duracion">Total Minutos <span class="sort-icon"></span></th>
+                <th data-field="avgDuracion" data-col="Asistente-Media">Media Minutos <span class="sort-icon"></span></th>
+                <th data-field="bypass" data-col="Asistente-Fugas">Fugas <span class="sort-icon"></span></th>
+                <th data-field="eficaciaScore" data-col="Asistente-Eficiencia">Puntaje Eficiencia (100 pts) <span class="sort-icon"></span></th>
+              </tr>
+            </thead>
+            <tbody id="tableAsistentesBody">
+              <!-- JS llenará esto -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    
+    <!-- TAB 6: CONVERSIONES POR HORA (OCULTO) -->
+    <div id="tab6" class="tab-content">
+        <div class="card">
+            <div class="card-title">Tendencia de Conversiones (Ventas) por Hora</div>
+            <div class="chart-container" style="height: 300px;">
+                <canvas id="chartConversionesHora"></canvas>
+            </div>
+        </div>
+        
+        <div class="card">
+             <div class="card-title">Detalle Numérico por Hora</div>
+             <div class="table-container">
+                 <table class="mini-table" id="tableConversionesHora">
+                     <thead>
+                         <tr>
+                             <th>Hora (Madrid)</th>
+                             <th>Total</th>
+                             <th>Directas</th>
+                             <th>Transferencia</th>
+                         </tr>
+                     </thead>
+                     <tbody id="tableConversionesHoraBody"></tbody>
+                 </table>
+             </div>
+        </div>
+    </div>
+
+    <!-- TAB 7: QUIÉN COLGÓ (OCULTO) -->
+    <div id="tab7" class="tab-content">
+        <div class="card">
+            <div class="card-title" style="color: var(--warning);">📞 Análisis de Fin de Llamada (Quién Colgó)</div>
+            <p style="font-size: 12px; color: var(--nav-text);">Muestra los agentes donde la columna "Colgado por" indica que el agente finalizó la llamada. Haz clic en una fila para ver y copiar los números.</p>
+            
+            <div class="efficiency-grid" style="margin-top:15px;">
+                <!-- Tabla Facilitadores -->
+                <div style="border-right: 1px solid var(--card-border); padding-right:10px;">
+                     <div class="card-title" style="color: var(--primary);">Facilitadores</div>
+                     <table class="mini-table">
+                         <thead><tr><th>Agente</th><th>Colgadas</th></tr></thead>
+                         <tbody id="tableColgadosFacilitador"></tbody>
+                     </table>
+                </div>
+                
+                <!-- Tabla Asistentes -->
+                <div>
+                     <div class="card-title" style="color: var(--accent);">Asistentes</div>
+                     <table class="mini-table">
+                         <thead><tr><th>Agente</th><th>Colgadas</th></tr></thead>
+                         <tbody id="tableColgadosAsistente"></tbody>
+                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: REBOTES Y CALIDAD (OCULTO) -->
+    <div id="tab3" class="tab-content">
+      
+      <!-- Chart: Tipos de Rebote (Barra Horizontal) -->
+      <div class="card">
+        <div class="card-title">Tipos de Rebote por Patrón (Fricción)</div>
+        <div class="chart-container" style="height: 250px;"><canvas id="chartTipos"></canvas></div>
+      </div>
+      
+      <!-- Ranking: Cuadro de Información Tabular -->
+      <div class="card">
+        <div class="card-title">Top 10 Agentes con Mayor Tasa de Rebote</div>
+        <div style="font-size:12px; margin-bottom: 10px; color: var(--nav-text);">
+          La tasa se calcula como Rebotes Generados / Llamadas Contestadas.
+        </div>
+        <div class="rebotes-ranking-grid" id="rebotesRankingGrid">
+          <!-- JS llenará esto con tarjetas -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: EFICIENCIA (Cálculo Detallado) (OCULTO) -->
+    <div id="tab4" class="tab-content">
+      <div class="card">
+        <div class="card-title" style="color: var(--primary);">✅ Puntaje de Eficiencia (Detalle)</div>
+        <p style="color: var(--nav-text); font-size: 14px; margin-bottom: 20px;">
+          El puntaje total (Máx 100 pts) se compone de 4 pilares: Tasa de Respuesta (30), Conversión (30), Rebotes (30) y Volumen (10).
+          <br>
+          <span style="font-weight: 600;">Promedio de Llamadas Contestadas (Volumen):</span> 
+          Facilitadores: <span id="avgF">0</span>, Asistentes: <span id="avgA">0</span>.
+        </p>
+        
+        <select id="selectAgenteEficiencia" class="card" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-color); margin: 0 0 15px 0;" onchange="renderEficienciaDetails(this.value)">
+          <option value="">Selecciona un Agente para ver el detalle...</option>
+        </select>
+
+        <div id="eficienciaContent">
+          <!-- Detalles de la puntuación aquí -->
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let dataGlobal = null;
+      let chartTiposInstance = null;
+      let chartConversionesInstance = null; // Nuevo chart instance
+      let historyChartInstance = null; // Instancia del gráfico de historial
+      
+      // VARIABLES PARA DEBUG
+      let lastAgentRequest = "";
+      let lastServerResponse = null;
+
+      let hiddenAgents = new Set(); 
+      let sortConfig = {
+        tableFacilitadores: { field: 'ratioReal', direction: 'desc' }, // Default sort by Ratio Real
+        tableAsistentes: { field: 'avgDuracion', direction: 'desc' } 
+      };
+      
+      // VARIABLES PARA ALERTAS Y REFRESH
+      let updateTimer = null;
+      const UPDATE_INTERVAL_MS = 30 * 60 * 1000; // 30 Minutos en milisegundos
+      
+      // Mapeo de columnas para Checkboxes
+      const columnMap = {
+        'Transfer-Llamadas': { colIndex: 1, table: 'tableFacilitadores' },
+        'Transfer-Conv-R': { colIndex: 2, table: 'tableFacilitadores' },
+        'Transfer-Ratio-R': { colIndex: 3, table: 'tableFacilitadores' },
+        'Transfer-Conv-F': { colIndex: 4, table: 'tableFacilitadores' },
+        'Transfer-Ratio-F': { colIndex: 5, table: 'tableFacilitadores' },
+        'Transfer-Eficiencia': { colIndex: 6, table: 'tableFacilitadores' },
+        'Transfer-Contestadas': { colIndex: 7, table: 'tableFacilitadores' }, // Nueva
+        
+        'Asistente-Contestadas': { colIndex: 1, table: 'tableAsistentes' },
+        'Asistente-Duracion': { colIndex: 2, table: 'tableAsistentes' },
+        'Asistente-Media': { colIndex: 3, table: 'tableAsistentes' },
+        'Asistente-Fugas': { colIndex: 4, table: 'tableAsistentes' },
+        'Asistente-Eficiencia': { colIndex: 5, table: 'tableAsistentes' },
+      };
+
+
+      // --- GESTIÓN DE TABS ---
+      function openTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        
+        const btn = document.querySelector(`.tab-btn[onclick="openTab('${tabId}')"]`);
+        if (btn) btn.classList.add('active');
+
+        // Forzar redraw de Chart.js si estaba oculto
+        if (tabId === 'tab3' && chartTiposInstance) {
+          chartTiposInstance.resize();
+        }
+        // NUEVO: Redraw chart conversiones
+        if (tabId === 'tab6' && chartConversionesInstance) {
+            chartConversionesInstance.resize();
+        }
+      }
+
+      // --- INICIALIZACIÓN ---
+      window.onload = function() {
+        // Asignar listeners a checkboxes
+        document.querySelectorAll('.table-options input[type="checkbox"]').forEach(checkbox => {
+          checkbox.addEventListener('change', toggleColumnVisibility);
+        });
+
+        // Asegurarse de que el script de Apps Script está disponible
+        if (typeof google === 'undefined' || !google.script || !google.script.run) {
+            console.error("google.script.run no está definido.");
+            document.getElementById('loading').innerHTML = '<div style="color: var(--accent); font-weight: bold;">Error: Entorno de Apps Script no detectado.</div>';
+            return;
+        }
+
+        // Carga inicial
+        loadData();
+      };
+      
+      // --- LÓGICA DE CARGA Y REFRESH ---
+      function loadData() {
+         document.getElementById('loading').style.display = 'flex'; // Mostrar Spinner
+         google.script.run
+          .withSuccessHandler(initDashboard)
+          .withFailureHandler(showError)
+          .obtenerDatosParaGrafico();
+      }
+
+      function manualRefresh() {
+          // Ocultar modal si estaba abierto
+          document.getElementById('alertModal').style.display = 'none';
+          
+          // Recargar datos
+          loadData();
+      }
+      
+      function resetUpdateTimer() {
+          if (updateTimer) clearTimeout(updateTimer);
+          
+          // Configurar nueva alarma para dentro de 30 mins
+          updateTimer = setTimeout(() => {
+              triggerUpdateAlert();
+          }, UPDATE_INTERVAL_MS);
+      }
+      
+      function triggerUpdateAlert() {
+          // 1. Reproducir sonido
+          const audio = document.getElementById('alertAudio');
+          if (audio) {
+              audio.play().catch(e => console.log("No se pudo reproducir audio automáticamente (política de navegador):", e));
+          }
+          
+          // 2. Mostrar Modal
+          document.getElementById('alertModal').style.display = 'flex';
+      }
+      
+      function updateLastUpdateClock() {
+          const now = new Date();
+          const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          document.getElementById('lastUpdateClock').textContent = timeString;
+      }
+
+      function initDashboard(data) {
+        document.getElementById('loading').style.display = 'none';
+        
+        // 1. Actualizar Hora y resetear Timer
+        updateLastUpdateClock();
+        resetUpdateTimer();
+        
+        dataGlobal = data; 
+        
+        // Convertir objeto de stats a array para facilitar el trabajo en el frontend
+        // CALCULAMOS AMBOS RATIOS (REAL y FACTURABLE)
+        dataGlobal.processedAgentes = Object.entries(data.stats).map(([k, v]) => {
+            let ratioReal = 0;
+            let ratioFacturable = 0;
+            
+            // Ratio Real = Conversiones / Contestadas
+            if (v.contestadas > 0) { 
+                ratioReal = ((v.convReales || 0) / v.contestadas) * 100;
+            }
+            
+            // Ratio Facturable = Conversiones / Recibidas
+            if (v.recibidas > 0) {
+                ratioFacturable = (v.convGeneradas / v.recibidas) * 100;
+            }
+
+            return { name: k, ...v, ratioReal: ratioReal, ratioFacturable: ratioFacturable };
+        });
+
+        // 2. Renderizar
+        renderMetricasGlobales(data.metricasGlobales); 
+        renderResumen(data);
+        renderGlobalDetails();
+        renderCharts(data.analisisRebotes);
+        renderEficienciaSelect(dataGlobal.processedAgentes, dataGlobal.globalAverages);
+        
+        // NUEVO: Renderizar Tabs Nuevos
+        renderConversionesChart(data.conversionesPorHora);
+        renderColgadosTable(dataGlobal.processedAgentes); // PASAMOS AGENTES PROCESADOS AHORA
+        
+        // 3. Asignar listeners de ordenamiento
+        attachSortListeners();
+
+        // 4. Aplicar visibilidad inicial (ocultar eficiencia y duración)
+        applyInitialVisibility();
+      }
+
+      function attachSortListeners() {
+        document.querySelectorAll('#tableFacilitadoresHeaders th').forEach(th => {
+          // Solo si tiene data-field (excluye la columna #)
+          if (th.dataset.field) {
+            th.addEventListener('click', () => sortTable('tableFacilitadores', th.dataset.field));
+          }
+        });
+        document.querySelectorAll('#tableAsistentesHeaders th').forEach(th => {
+          // Solo si tiene data-field (excluye la columna #)
+          if (th.dataset.field) {
+            th.addEventListener('click', () => sortTable('tableAsistentes', th.dataset.field));
+          }
+        });
+      }
+      
+      // --- MODAL DE HISTORIAL SEMANAL (NUEVO) ---
+      function verHistorialAsistente(agente) {
+          // 1. Mostrar modal y loader
+          document.getElementById('historyModal').style.display = 'flex';
+          document.getElementById('historyLoader').style.display = 'block';
+          document.getElementById('historyAgentName').textContent = "Cargando datos de " + agente + "...";
+          
+          // Guardar para debug
+          lastAgentRequest = agente;
+          lastServerResponse = null; // Reset
+
+          // Limpiar gráfico anterior si existe
+          if (historyChartInstance) {
+              historyChartInstance.destroy();
+              historyChartInstance = null;
+          }
+
+          // 2. Llamar al backend
+          google.script.run
+              .withSuccessHandler(renderHistoryChart)
+              .withFailureHandler((err) => {
+                  alert("Error cargando historial: " + err.message);
+                  document.getElementById('historyLoader').style.display = 'none';
+                  lastServerResponse = { error: err.message };
+              })
+              .getHistorialMediaSemanal(agente);
+      }
+
+      function renderHistoryChart(resultado) {
+          document.getElementById('historyLoader').style.display = 'none';
+          
+          // Guardar respuesta para debug
+          lastServerResponse = resultado;
+          
+          if (!resultado || !resultado.exito || !resultado.datos || resultado.datos.length === 0) {
+              document.getElementById('historyAgentName').textContent = "No hay historial reciente disponible.";
+              return;
+          }
+
+          document.getElementById('historyAgentName').textContent = "Tendencia de Media (Min) - Últimos 7 Registros (" + lastAgentRequest + ")";
+
+          const ctx = document.getElementById('historyChart').getContext('2d');
+          const labels = resultado.datos.map(d => d.fecha);
+          const values = resultado.datos.map(d => d.valor);
+
+          historyChartInstance = new Chart(ctx, {
+              type: 'line',
+              data: {
+                  labels: labels,
+                  datasets: [{
+                      label: 'Media de Minutos',
+                      data: values,
+                      borderColor: '#d93025', // Color rojo (Asistentes)
+                      backgroundColor: 'rgba(217, 48, 37, 0.1)',
+                      borderWidth: 2,
+                      pointBackgroundColor: '#fff',
+                      pointBorderColor: '#d93025',
+                      pointRadius: 4,
+                      fill: true,
+                      tension: 0.3 // Curva suave
+                  }]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                      y: {
+                          beginAtZero: true,
+                          title: { display: true, text: 'Minutos' }
+                      }
+                  },
+                  plugins: {
+                      legend: { display: false }
+                  }
+              }
+          });
+      }
+      
+      // --- FUNCIÓN DE DEBUG MEJORADA ---
+      function showDebugInfo() {
+          if (!lastAgentRequest) {
+              alert("No se ha realizado ninguna solicitud aún.");
+              return;
+          }
+          
+          if (!lastServerResponse) {
+              alert("Esperando respuesta del servidor...");
+              return;
+          }
+
+          const d = lastServerResponse.debug || {};
+          
+          let msg = "🔍 REPORTE DE INSPECCIÓN\n";
+          msg += "--------------------------------\n";
+          msg += `Agente Buscado: "${d.buscado}"\n`;
+          msg += `Registros Encontrados: ${d.encontradosTotal}\n`;
+          msg += `Datos Gráfico (Final): ${lastServerResponse.datos ? lastServerResponse.datos.length : 0}\n\n`;
+          
+          msg += "📋 MUESTRA DE LA HOJA 'HISTORIAL' (Primeras 5 filas):\n";
+          if (d.muestraHoja && d.muestraHoja.length > 0) {
+              d.muestraHoja.forEach((fila, i) => {
+                  msg += `[${i+1}] ${fila}\n`;
+              });
+          } else {
+              msg += "(No se pudo leer la muestra o hoja vacía)\n";
+          }
+          
+          msg += "\n--------------------------------\n";
+          msg += "Si 'Nombre' o 'Ext' en la muestra no coinciden con 'Agente Buscado', el sistema no los encontrará.";
+
+          console.log("DEBUG FULL:", lastServerResponse);
+          alert(msg);
+      }
+
+      // --- MODAL DE NUMEROS COLGADOS ---
+      function openColgadosModal(agentName, numeros) {
+          const modal = document.getElementById('colgadosModal');
+          const title = document.getElementById('colgadosModalTitle');
+          const list = document.getElementById('colgadosList');
+          
+          title.textContent = `Colgadas por: ${agentName}`;
+          // Formatear numeros con saltos de linea para facil copiado
+          list.textContent = numeros.join('\n');
+          
+          modal.style.display = 'flex';
+      }
+      
+      function closeColgadosModal() {
+          document.getElementById('colgadosModal').style.display = 'none';
+      }
+      
+      function copyColgadosToClipboard() {
+          const text = document.getElementById('colgadosList').textContent;
+          
+          // Crear un elemento textarea temporal para copiar
+          const el = document.createElement('textarea');
+          el.value = text;
+          document.body.appendChild(el);
+          el.select();
+          document.execCommand('copy');
+          document.body.removeChild(el);
+          
+          alert("¡Lista de números copiada al portapapeles!");
+      }
+      
+      // --- NUEVAS FUNCIONES DE RENDERIZADO (CON STACKED CHART) ---
+      function renderConversionesChart(horasArray) {
+          // Renderizar Gráfico
+          if (chartConversionesInstance) chartConversionesInstance.destroy();
+          const ctx = document.getElementById('chartConversionesHora').getContext('2d');
+          
+          const labels = horasArray.map((_, i) => `${i}:00`);
+          
+          // Extraer datasets
+          const dataDirect = horasArray.map(h => h.directa);
+          const dataConv = horasArray.map(h => h.conversion);
+
+          chartConversionesInstance = new Chart(ctx, {
+              type: 'bar',
+              data: {
+                  labels: labels,
+                  datasets: [
+                      {
+                          label: 'Venta Directa',
+                          data: dataDirect,
+                          backgroundColor: '#1a73e8', // Azul (Primary)
+                          borderRadius: 2
+                      },
+                      {
+                          label: 'Por Transferencia',
+                          data: dataConv,
+                          backgroundColor: '#34a853', // Verde (Success)
+                          borderRadius: 2
+                      }
+                  ]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                      y: { 
+                          beginAtZero: true, 
+                          stacked: true, // APILADO
+                          grid: { color: 'rgba(0,0,0,0.05)' } 
+                      },
+                      x: { 
+                          stacked: true, // APILADO
+                          grid: { display: false } 
+                      }
+                  },
+                  plugins: {
+                      legend: { position: 'bottom' }
+                  }
+              }
+          });
+          
+          // Renderizar Tabla
+          const tbody = document.getElementById('tableConversionesHoraBody');
+          tbody.innerHTML = '';
+          horasArray.forEach((item, i) => {
+              if (item.total === 0) return; 
+              const tr = document.createElement('tr');
+              
+              tr.innerHTML = `
+                  <td style="font-weight:600;">${i}:00 - ${i}:59</td>
+                  <td style="font-weight:bold; font-size:14px;">${item.total}</td>
+                  <td style="color:var(--primary);">${item.directa}</td>
+                  <td style="color:var(--success);">${item.conversion}</td>
+              `;
+              tbody.appendChild(tr);
+          });
+      }
+      
+      function renderColgadosTable(agents) {
+          const tbodyFac = document.getElementById('tableColgadosFacilitador');
+          const tbodyAsist = document.getElementById('tableColgadosAsistente');
+          
+          tbodyFac.innerHTML = '';
+          tbodyAsist.innerHTML = '';
+          
+          agents.forEach(agent => {
+              // Filtrar solo si tiene numeros colgados
+              const colgadasCount = agent.numerosColgados ? agent.numerosColgados.length : 0;
+              if (colgadasCount === 0) return;
+              
+              const tr = document.createElement('tr');
+              tr.className = 'clickable-row';
+              tr.onclick = function() { openColgadosModal(agent.name, agent.numerosColgados); };
+              
+              tr.innerHTML = `
+                  <td style="font-weight:600; color:var(--text-color);">${agent.name}</td>
+                  <td style="font-weight:bold; color:var(--accent);">${colgadasCount}</td>
+              `;
+              
+              if (agent.isFacilitador) {
+                  tbodyFac.appendChild(tr);
+              } else {
+                  tbodyAsist.appendChild(tr);
+              }
+          });
+      }
+
+      // --- GESTIÓN DE VISIBILIDAD DE FILAS ---
+      function hideSelectedAgents() {
+          let selected = false;
+          // 1. Buscar en ambas tablas los checkboxes marcados
+          document.querySelectorAll('#tab2 input[type="checkbox"][name="agent-select"]:checked').forEach(checkbox => {
+              const agentName = checkbox.value;
+              hiddenAgents.add(agentName);
+              // Desmarcar inmediatamente después de procesar
+              checkbox.checked = false; 
+              selected = true;
+          });
+          
+          if (selected) {
+              // Volver a renderizar. La función render() usa hiddenAgents para filtrar.
+              renderGlobalDetails(); 
+          }
+      }
+
+      function showAllAgents() {
+          if (hiddenAgents.size > 0) {
+              hiddenAgents.clear();
+              // Volver a renderizar para mostrar todos
+              renderGlobalDetails();
+          }
+      }
+      
+      // --- GESTIÓN DE COLUMNAS (CHECKBOXES) ---
+      function toggleColumnVisibility(event) {
+        const colKey = event.target.dataset.col;
+        const isVisible = event.target.checked;
+        const { table } = columnMap[colKey];
+        
+        if (!table) return;
+
+        const tableElement = document.getElementById(table);
+        if (!tableElement) return;
+
+        // Toggle visibility para headers y celdas usando el atributo data-col
+        tableElement.querySelectorAll(`[data-col="${colKey}"]`).forEach(cell => {
+          cell.style.display = isVisible ? '' : 'none';
+        });
+      }
+      
+      function applyInitialVisibility() {
+          // Obtener checkboxes que NO están marcados por defecto y ocultar sus columnas
+          document.querySelectorAll('.table-options input[type="checkbox"]:not(:checked)').forEach(checkbox => {
+              const colKey = checkbox.dataset.col;
+              const { table } = columnMap[colKey];
+              
+              if (!table) return;
+
+              const tableElement = document.getElementById(table);
+              if (tableElement) {
+                  // Ocultar tanto th como td
+                  tableElement.querySelectorAll(`[data-col="${colKey}"]`).forEach(cell => {
+                      cell.style.display = 'none';
+                  });
+              }
+          });
+      }
+
+
+      // --- GESTIÓN DE ORDENAMIENTO (FILTROS) ---
+      function sortTable(tableId, field) {
+        const config = sortConfig[tableId];
+        
+        // 1. Actualizar configuración de ordenamiento
+        let newDirection = 'desc'; // Default to DESC (Mayor a menor) for new clicks
+        if (config.field === field) {
+          // Toggle if clicking the same column
+          newDirection = config.direction === 'desc' ? 'asc' : 'desc';
+        }
+        config.field = field;
+        config.direction = newDirection;
+
+        // 2. Filtrar y Ordenar datos
+        const isFacilitadorTable = tableId === 'tableFacilitadores';
+        let agents = dataGlobal.processedAgentes.filter(ag => {
+            // Regla de filtro para Facilitadores (solo si tienen el rol o si tienen actividad)
+            if (isFacilitadorTable) {
+                return ag.isFacilitador && ag.recibidas > 0;
+            } 
+            // Regla de filtro para Asistentes (solo si tienen el rol o si tienen actividad)
+            else {
+                return ag.isAsistente && ag.contestadas > 0;
+            }
+        });
+        
+        agents.sort((a, b) => {
+          const aVal = a[field];
+          const bVal = b[field];
+          
+          let comparison = 0;
+          if (typeof aVal === 'number' && typeof bVal === 'number') {
+            comparison = aVal - bVal;
+          } else {
+            // Ordenar por nombre (string)
+            comparison = aVal.toString().localeCompare(bVal.toString());
+          }
+          
+          return config.direction === 'asc' ? comparison : comparison * -1;
+        });
+
+        // 3. Renderizar nuevamente
+        if (isFacilitadorTable) renderFacilitadoresTable(agents);
+        else renderAsistentesTable(agents);
+        
+        // 4. Actualizar iconos de ordenamiento
+        updateSortIcons(tableId, field, newDirection);
+      }
+      
+      function updateSortIcons(tableId, field, direction) {
+        document.querySelectorAll(`#${tableId}Headers th`).forEach(th => {
+          const icon = th.querySelector('.sort-icon');
+          if (icon) {
+            icon.innerHTML = '';
+            if (th.dataset.field === field) {
+              icon.innerHTML = direction === 'asc' ? '▲' : '▼';
+            }
+          }
+        });
+      }
+
+      // --- RENDERIZADO DE MÉTRICAS GLOBALES (ACTUALIZADO) ---
+      function renderMetricasGlobales(m) {
+          const container = document.getElementById('globalMetricsContainer');
+          container.innerHTML = ''; // Limpiar el contenedor
+
+          // --- CALCULO RATIO CONVERSION GLOBAL (SOLICITADO) ---
+          // Formula: (Conversiones al 807 / Respondidas 91) * 100
+          let ratioGlobalCalculado = 0;
+          // dataGlobal.logs.totalConversiones es el dato que definimos como "Conversiones al 807"
+          // m.facilitador.respondidas es "Respondidas 91"
+          if (m.facilitador.respondidas > 0) {
+              ratioGlobalCalculado = (dataGlobal.logs.totalConversiones / m.facilitador.respondidas) * 100;
+          }
+
+          // --- NUEVO CÁLCULO: % CONVERSIONES FACTURABLES ---
+          // Formula: Respondidas 807 / Respondidas 91
+          let ratioFacturables = 0;
+          if (m.facilitador.respondidas > 0) {
+              ratioFacturables = (m.asistente.respondidas / m.facilitador.respondidas) * 100;
+          }
+
+          // 1. Sección Facilitador (91)
+          const dataFacilitador = [
+              { label: 'Total Llamadas 91', value: m.facilitador.totalLlamadas.toLocaleString() },
+              { label: 'Respondidas 91', value: m.facilitador.respondidas.toLocaleString() },
+              { label: 'Media Minutos 91', value: m.facilitador.media + ' min' },
+              { label: 'Total Minutos 91', value: m.facilitador.totalMinutos + ' min' },
+
+              // Usamos el Ratio calculado con la nueva lógica
+              { label: 'Ratio Conversión (FACT)', value: ratioGlobalCalculado.toFixed(2) + ' %', color: 'var(--success)' },
+              
+              // REEMPLAZO: Se eliminan Rebotes y se agrega % Conversiones Facturables
+              { label: 'Ratio Conversión (GLOBAL)', value: ratioFacturables.toFixed(2) + ' %', color: 'var(--success)' },
+              
+              { label: 'Ext. 91 Con. (Conv. Gen.)', value: m.facilitador.extConv.toLocaleString() },
+          ];
+          
+          let htmlFacilitador = '<div class="section-header" style="color: var(--primary);">🔷 Métricas de Facilitador (91)</div>';
+          htmlFacilitador += '<div class="metric-section-grid">';
+          dataFacilitador.forEach(metric => {
+              htmlFacilitador += `
+                  <div class="metric-card">
+                      <div class="metric-label">${metric.label}</div>
+                      <div class="metric-value" style="color: ${metric.color || 'var(--text-color)'};">${metric.value}</div>
+                  </div>
+              `;
+          });
+          htmlFacilitador += '</div>';
+
+          // --- MODIFICACIÓN DE REBOTE ASISTENTE ---
+          // Formula: (1 - (Respondidas / Totales)) * 100
+          let reboteAsistCalculado = 0;
+          if (m.asistente.totalLlamadas > 0) {
+              reboteAsistCalculado = (1 - (m.asistente.respondidas / m.asistente.totalLlamadas)) * 100;
+          }
+
+          // 2. Sección Asistente (807)
+          const dataAsistente = [
+              { label: 'Total Llamadas 807', value: m.asistente.totalLlamadas.toLocaleString() },
+              { label: 'Respondidas 807', value: m.asistente.respondidas.toLocaleString() },
+              { label: 'Media Minutos 807', value: m.asistente.media + ' min' },
+              { label: 'Total Minutos 807', value: m.asistente.totalMinutos + ' min' },
+              
+              // --- CAMBIO SOLICITADO AQUÍ ---
+              // Usar el dato de logs (Flujo Real detectado) en lugar de respondidas (m.asistente.conversiones)
+              { label: 'Conversiones al 807 (Totales)', value: dataGlobal.logs.totalConversiones.toLocaleString(), color: 'var(--success)' },
+              { label: 'Total Rebotes Asistente (A>A, A>F)', value: m.asistente.totalRebote.toLocaleString(), color: 'var(--accent)' },
+              // USAMOS EL VALOR CALCULADO AQUÍ
+              { label: '% Rebote Asistente', value: reboteAsistCalculado.toFixed(2) + ' %', color: 'var(--accent)' },
+              { label: 'Min. Facturables 807', value: m.asistente.minFacturables + ' min' },
+          ];
+
+          let htmlAsistente = '<div class="section-header" style="color: var(--accent);">🔶 Métricas de Asistente (807)</div>';
+          htmlAsistente += '<div class="metric-section-grid">';
+          dataAsistente.forEach(metric => {
+              htmlAsistente += `
+                  <div class="metric-card">
+                      <div class="metric-label">${metric.label}</div>
+                      <div class="metric-value" style="color: ${metric.color || 'var(--text-color)'};">${metric.value}</div>
+                  </div>
+              `;
+          });
+          htmlAsistente += '</div>';
+
+          // 3. Sección General
+          const dataGeneral = [
+              { label: 'Total Facturables (Conv + Seg)', value: m.generales.totalFacturables.toLocaleString(), color: 'var(--success)' },
+              { label: 'Ext. 807 Con. (Conv. Recib.)', value: m.generales.ext807Conv.toLocaleString() },
+              { label: 'Total Llamadas Operador', value: m.generales.totalOperador.toLocaleString() },
+          ];
+
+          let htmlGeneral = '<div class="section-header" style="color: var(--nav-text);">✨ Métricas Generales</div>';
+          htmlGeneral += '<div class="metric-section-grid" style="grid-template-columns: repeat(3, 1fr);">';
+          dataGeneral.forEach(metric => {
+              htmlGeneral += `
+                  <div class="metric-card">
+                      <div class="metric-label">${metric.label}</div>
+                      <div class="metric-value" style="color: ${metric.color || 'var(--text-color)'};">${metric.value}</div>
+                  </div>
+              `;
+          });
+          htmlGeneral += '</div>';
+
+
+          // Ensamblar todo
+          container.innerHTML = htmlFacilitador + htmlAsistente + htmlGeneral;
+      }
+
+
+      // --- RENDERIZADO DE CONVERSIÓN (Anteriormente Resumen) ---
+      function renderResumen(data) {
+        let totalConv = 0, totalPases = 0, totalAsistCalls = 0;
+        
+        Object.values(data.stats).forEach(ag => {
+            // El backend ya calculó el rol, usamos eso
+            if (ag.isFacilitador) {
+               // Contar llamadas totales que generaron conversiones o fugas (asumimos que estos son "pases")
+               totalPases += ag.convGeneradas + ag.bypass; 
+            }
+            if (ag.isAsistente) {
+               totalAsistCalls += ag.recibidas;
+            }
+        });
+        
+        totalPases = data.logs.totalConversiones + data.logs.totalBypass; // Más preciso
+        document.getElementById('resFacTotal').innerText = totalPases; 
+        document.getElementById('resFacConv').innerText = data.logs.totalConversiones;
+        
+        let rate = totalPases > 0 ? (data.logs.totalConversiones / totalPases) * 100 : 0;
+        document.getElementById('resFacRate').innerText = rate.toFixed(1) + "%";
+
+        document.getElementById('resAsistTotal').innerText = totalAsistCalls; 
+        document.getElementById('resAsistBypass').innerText = data.logs.totalBypass;
+        document.getElementById('resAbandonos').innerText = data.logs.totalAbandonos;
+      }
+      
+      function renderGlobalDetails() {
+        // Ejecuta el ordenamiento inicial que a su vez llama a las funciones de renderizado
+        sortTable('tableFacilitadores', sortConfig.tableFacilitadores.field);
+        sortTable('tableAsistentes', sortConfig.tableAsistentes.field);
+      }
+      
+      function renderFacilitadoresTable(agents) {
+        const tbody = document.getElementById('tableFacilitadoresBody');
+        tbody.innerHTML = "";
+        
+        agents.forEach(ag => {
+            if (ag.recibidas === 0) return;
+            const nombreCorto = ag.name.length > 18 ? ag.name.substring(0, 15) + '...' : ag.name;
+            
+            // --- NUEVA LÓGICA DE COLOR PARA TRANSFER (RATIO REAL) ---
+            // 0 a 5 rojo, de 5 a 7 amarillo, de 7 a 10 blanco, y de 10 en adelante verde
+            let ratioRealColor = '';
+            if (ag.ratioReal < 5) ratioRealColor = 'text-danger';
+            else if (ag.ratioReal >= 5 && ag.ratioReal < 7) ratioRealColor = 'text-warning';
+            else if (ag.ratioReal >= 7 && ag.ratioReal < 10) ratioRealColor = ''; // Blanco (default)
+            else ratioRealColor = 'text-success'; // > 10
+            
+            // --- LÓGICA DE COLOR (Ratio Facturable) - Misma lógica solicitada ---
+            let ratioFactColor = '';
+            if (ag.ratioFacturable < 5) ratioFactColor = 'text-danger';
+            else if (ag.ratioFacturable >= 5 && ag.ratioFacturable < 7) ratioFactColor = 'text-warning';
+            else if (ag.ratioFacturable >= 7 && ag.ratioFacturable < 10) ratioFactColor = ''; // Blanco
+            else ratioFactColor = 'text-success'; // > 10
+
+            const tr = document.createElement('tr');
+            
+            // Ocultar si está en el set de hiddenAgents
+            if (hiddenAgents.has(ag.name)) {
+                tr.style.display = 'none'; 
+            }
+
+            tr.innerHTML = `
+              <td><input type="checkbox" name="agent-select" value="${ag.name}"></td>
+              <td style="font-weight:500;">${nombreCorto}</td>
+              <td data-col="Transfer-Llamadas">${ag.recibidas}</td>
+              
+              <!-- Columnas REALES -->
+              <td data-col="Transfer-Conv-R" style="font-weight:bold;">${ag.convReales || 0}</td>
+              <td data-col="Transfer-Ratio-R" class="${ratioRealColor}" style="font-weight:bold;">${ag.ratioReal.toFixed(1)}%</td>
+              
+              <!-- Columnas FACTURABLES -->
+              <td data-col="Transfer-Conv-F" style="font-weight:bold;">${ag.convGeneradas}</td>
+              <td data-col="Transfer-Ratio-F" class="${ratioFactColor}" style="font-weight:bold;">${ag.ratioFacturable.toFixed(1)}%</td>
+
+              <td data-col="Transfer-Eficiencia" style="font-weight:bold; color: var(--primary);">${ag.eficaciaScore}</td>
+              
+              <!-- Contestadas al final -->
+              <td data-col="Transfer-Contestadas">${ag.contestadas}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+        // Es necesario volver a aplicar la visibilidad de columnas por si una tabla se renderiza después que la otra
+        applyInitialVisibility();
+      }
+
+      function renderAsistentesTable(agents) {
+        const tbody = document.getElementById('tableAsistentesBody');
+        tbody.innerHTML = "";
+
+        agents.forEach(ag => {
+            if (ag.contestadas === 0) return;
+            const nombreCorto = ag.name.length > 18 ? ag.name.substring(0, 15) + '...' : ag.name;
+            const mediaMinutos = ag.avgDuracion.toFixed(2);
+            
+            // --- NUEVA LÓGICA DE COLOR PARA ASISTENTES (MEDIA) ---
+            // < 10 Rojo, 10-15 Amarillo, 15-20 Blanco, > 20 Verde
+            let colorClase = '';
+            const val = parseFloat(mediaMinutos);
+            
+            if (val < 10) colorClase = 'text-danger'; 
+            else if (val >= 10 && val < 15) colorClase = 'text-warning'; 
+            else if (val >= 15 && val < 20) colorClase = ''; // Blanco (Default)
+            else colorClase = 'text-success'; // > 20
+            
+            const tr = document.createElement('tr');
+
+            // Ocultar si está en el set de hiddenAgents
+            if (hiddenAgents.has(ag.name)) {
+                tr.style.display = 'none'; 
+            }
+            
+            tr.innerHTML = `
+              <td><input type="checkbox" name="agent-select" value="${ag.name}"></td>
+              <td class="clickable-name" title="Ver Historial Semanal" onclick="verHistorialAsistente('${ag.name}')" style="font-weight:500;">${nombreCorto}</td>
+              <td data-col="Asistente-Contestadas">${ag.contestadas}</td>
+              <td data-col="Asistente-Duracion">${ag.totalMinutos.toFixed(1)} min</td>
+              <td data-col="Asistente-Media" class="${colorClase}" style="font-weight:bold;">${mediaMinutos} min</td>
+              <td data-col="Asistente-Fugas">${ag.bypass}</td>
+              <td data-col="Asistente-Eficiencia" style="font-weight:bold; color: var(--primary);">${ag.eficaciaScore}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+        // Es necesario volver a aplicar la visibilidad de columnas por si una tabla se renderiza después que la otra
+        applyInitialVisibility();
+      }
+      
+      function renderCharts(rebotesData) {
+        if (chartTiposInstance) chartTiposInstance.destroy();
+        
+        // 1. Tipos de Rebote (Gráfico de Barras Horizontales)
+        const ctxTipos = document.getElementById('chartTipos').getContext('2d');
+        chartTiposInstance = new Chart(ctxTipos, {
+          type: 'bar', 
+          data: {
+            labels: Object.keys(rebotesData.tipos),
+            datasets: [{
+              label: 'Rebotes',
+              data: Object.values(rebotesData.tipos),
+              backgroundColor: ['#4285f4', '#ea4335', '#fbbc04', '#34a853'],
+              borderWidth: 0,
+              borderRadius: 4
+            }]
+          },
+          options: {
+            indexAxis: 'y', 
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true, ticks: { color: 'var(--nav-text)' } }, y: { ticks: { color: 'var(--nav-text)', font: { size: 12 } } } }
+          }
+        });
+
+        // 2. Ranking de Rebotes (Cuadro de Información Tabular)
+        const rankingGrid = document.getElementById('rebotesRankingGrid');
+        rankingGrid.innerHTML = '';
+        
+        rebotesData.ranking.forEach(r => {
+            const div = document.createElement('div');
+            div.className = 'ranking-item';
+            div.innerHTML = `
+                <div class="ranking-item-agente">${r.agente}</div>
+                <div class="ranking-item-tasa">${r.tasa}%</div>
+                <div class="ranking-item-lbl">${r.rebotes} / ${r.total} llamadas</div>
+            `;
+            rankingGrid.appendChild(div);
+        });
+      }
+
+      function renderEficienciaSelect(agents, averages) {
+          const select = document.getElementById('selectAgenteEficiencia');
+          select.innerHTML = '<option value="">Selecciona un Agente para ver el detalle...</option>';
+          
+          // Llenar select con agentes que tengan actividad
+          agents.filter(a => a.recibidas > 0).forEach(ag => {
+              const option = document.createElement('option');
+              option.value = ag.name;
+              option.textContent = `${ag.name} (Puntaje: ${ag.eficaciaScore} pts)`;
+              select.appendChild(option);
+          });
+
+          // CORRECCIÓN: Quitamos .toFixed(0) aquí porque en el objeto globalAverages ya viene como string formateado
+          if (averages && averages.avgContestadasF) {
+             document.getElementById('avgF').textContent = averages.avgContestadasF;
+          }
+          if (averages && averages.avgContestadasA) {
+             document.getElementById('avgA').textContent = averages.avgContestadasA;
+          }
+      }
+
+      function renderEficienciaDetails(agenteName) {
+          const content = document.getElementById('eficienciaContent');
+          if (!agenteName) {
+              content.innerHTML = '';
+              return;
+          }
+
+          const agent = dataGlobal.processedAgentes.find(a => a.name === agenteName);
+          if (!agent || !agent.eficaciaDetails) {
+              content.innerHTML = '<p style="color:var(--accent);">No se encontraron detalles de eficiencia para este agente.</p>';
+              return;
+          }
+          
+          const d = agent.eficaciaDetails;
+          const isF = agent.isFacilitador;
+          
+          content.innerHTML = `
+              <div class="card" style="background: var(--nav-bg); margin-bottom: 20px;">
+                  <div class="card-title" style="color: var(--text-color); margin-bottom: 0;">Puntaje Total: <span style="font-size: 24px; color: var(--primary); font-weight: 700;">${agent.eficaciaScore}</span> / 100</div>
+                  <div style="font-size: 11px; color: var(--nav-text);">Rol detectado: <span style="font-weight: 600;">${isF ? 'Facilitador (Transfer)' : 'Asistente'}</span></div>
+              </div>
+
+              <div class="efficiency-grid">
+                
+                <!-- Columna 1: Puntos -->
+                <div class="card" style="padding: 10px;">
+                  <div class="card-title">Desglose de Puntos Obtenidos</div>
+                  <table class="score-breakdown-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 70%;">Criterio</th>
+                        <th>Puntos (Máx)</th>
+                        <th>Obtenidos</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>1. Tasa de Respuesta (Contestadas/Recibidas)</td>
+                        <td>30</td>
+                        <td>${d.scoreA}</td>
+                      </tr>
+                      <tr>
+                        <td>2. % Conversión (Aplica a Facilitadores)</td>
+                        <td>30</td>
+                        <td style="color: ${isF ? 'var(--success)' : 'var(--nav-text)'};">${isF ? d.scoreB : 'N/A'}</td>
+                      </tr>
+                      <tr>
+                        <td>3. Rebotes Generados (Bajo % es mejor)</td>
+                        <td>30</td>
+                        <td>${d.scoreC}</td>
+                      </tr>
+                      <tr>
+                        <td>4. Volumen Contestadas (Vs. Promedio)</td>
+                        <td>10</td>
+                        <td>${d.scoreD}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Columna 2: Métricas -->
+                <div class="card" style="padding: 10px;">
+                  <div class="card-title">Métricas de Rendimiento</div>
+                  <table class="score-breakdown-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 70%;">Métrica</th>
+                        <th>Valor</th>
+                        <th>Objetivo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Llamadas Contestadas / Recibidas</td>
+                        <td>${(d.answerRate * 100).toFixed(1)}%</td>
+                        <td>100% (30pt)</td>
+                      </tr>
+                      <tr>
+                        <td>% Conversión (Conv. / Recibidas)</td>
+                        <td>${(d.conversionRate * 100).toFixed(1)}%</td>
+                        <td>>= 12% (30pt)</td>
+                      </tr>
+                      <tr>
+                        <td>% Rebotes (Rebotes Gen. / Contestadas)</td>
+                        <td>${(d.bounceRate * 100).toFixed(1)}%</td>
+                        <td><= 10% (30pt)</td>
+                      </tr>
+                      <tr>
+                        <td>Contestadas vs. Promedio (Objetivo)</td>
+                        <td>${agent.contestadas} llamadas</td>
+                        <td>>${agent.isFacilitador ? dataGlobal.globalAverages.avgContestadasF : dataGlobal.globalAverages.avgContestadasA}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+              </div>
+          `;
+      }
+
+      function showError(err) {
+        alert("Error al cargar datos: " + err.message);
+        document.getElementById('loading').style.display = 'none';
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suites - Portal de Operaciones</title>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #334155;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            
+            --radius: 12px;
+            --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, #1a1a2e 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* Login Screen */
+        #login-screen {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-primary);
+            z-index: 1000;
+        }
+
+        .login-card {
+            background: var(--bg-secondary);
+            padding: 40px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid var(--bg-card);
+        }
+
+        .login-logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .login-card h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, var(--accent), #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-card p {
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .message.show { display: block; }
+        .message.error { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+        .message.success { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+
+        /* Main App */
+        #app { display: none; }
+
+        .header {
+            background: var(--bg-secondary);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--bg-card);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent), #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-name {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .btn-logout {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid var(--bg-card);
+            color: var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-logout:hover {
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        /* Navigation */
+        .nav-tabs {
+            display: flex;
+            background: var(--bg-secondary);
+            padding: 0 30px;
+            gap: 5px;
+            border-bottom: 1px solid var(--bg-card);
+        }
+
+        .nav-tab {
+            padding: 15px 25px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-tab:hover { color: var(--text-primary); }
+
+        .nav-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        /* Content */
+        .content-area {
+            height: calc(100vh - 120px);
+            padding: 20px;
+        }
+
+        .tab-panel {
+            display: none;
+            height: 100%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-panel.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .iframe-container {
+            width: 100%;
+            height: 100%;
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid var(--bg-card);
+        }
+
+        .iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+
+        /* Upload Tab */
+        .upload-zone {
+            border: 3px dashed var(--accent);
+            border-radius: var(--radius);
+            padding: 80px 40px;
+            text-align: center;
+            background: rgba(59, 130, 246, 0.05);
+            transition: all 0.3s;
+            cursor: pointer;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .upload-zone:hover, .upload-zone.dragover {
+            background: rgba(59, 130, 246, 0.1);
+            transform: scale(1.02);
+        }
+
+        .upload-icon { font-size: 64px; margin-bottom: 20px; }
+        .upload-title { font-size: 24px; margin-bottom: 10px; }
+        .upload-hint { color: var(--text-secondary); }
+
+        .file-input { display: none; }
+
+        .progress-container {
+            width: 100%;
+            max-width: 400px;
+            margin-top: 30px;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--bg-card);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen">
+        <div class="login-card">
+            <div class="login-logo">🔐</div>
+            <h1>Suites</h1>
+            <p>Portal de Operaciones y Análisis</p>
+            
+            <div id="login-message" class="message"></div>
+            
+            <div class="input-group">
+                <label for="username">Usuario</label>
+                <input type="text" id="username" placeholder="Tu usuario" onkeypress="if(event.key==='Enter')login()">
+            </div>
+            
+            <div class="input-group">
+                <label for="password">Contraseña</label>
+                <input type="password" id="password" placeholder="••••••" onkeypress="if(event.key==='Enter')login()">
+            </div>
+            
+            <button class="btn-primary" id="btn-login" onclick="login()">
+                Ingresar
+            </button>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app">
+        <header class="header">
+            <div class="logo">🔐 Suites</div>
+            <div class="user-info">
+                <span class="user-name" id="user-display">Usuario</span>
+                <button class="btn-logout" onclick="logout()">Salir</button>
+            </div>
+        </header>
+
+        <nav class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('dashboard', this)">
+                📊 Dashboard
+            </button>
+            <button class="nav-tab" onclick="switchTab('mensual', this)">
+                📅 Mensual
+            </button>
+            <button class="nav-tab" onclick="switchTab('selector', this)">
+                📝 Diario
+            </button>
+            <button class="nav-tab" onclick="switchTab('upload', this)">
+                📤 Cargar
+            </button>
+        </nav>
+
+        <main class="content-area">
+            <!-- Dashboard -->
+            <div id="tab-dashboard" class="tab-panel active">
+                <div class="iframe-container">
+                    <iframe id="iframe-dashboard" src="about:blank"></iframe>
+                </div>
+            </div>
+
+            <!-- Panel Mensual -->
+            <div id="tab-mensual" class="tab-panel">
+                <div class="iframe-container">
+                    <iframe id="iframe-mensual" src="about:blank"></iframe>
+                </div>
+            </div>
+
+            <!-- Selector Diario -->
+            <div id="tab-selector" class="tab-panel">
+                <div class="iframe-container">
+                    <iframe id="iframe-selector" src="about:blank"></iframe>
+                </div>
+            </div>
+
+            <!-- Upload -->
+            <div id="tab-upload" class="tab-panel">
+                <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-title">Arrastra archivos aquí</div>
+                    <div class="upload-hint">o haz clic para seleccionar CSV o Excel</div>
+                    <input type="file" id="file-input" class="file-input" accept=".csv,.xlsx,.xls" onchange="handleFile(event)">
+                    
+                    <div class="progress-container" id="progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <div class="progress-text" id="progress-text">Procesando...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ===== SESIÓN GLOBAL =====
+        window.SUITES_SESSION = null;
+        let currentTab = 'dashboard';
+
+        // ===== AUTENTICACIÓN =====
+        function login() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('btn-login');
+            const msg = document.getElementById('login-message');
+
+            if (!username || !password) {
+                showMessage(msg, 'Completa todos los campos', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Verificando...';
+
+            // Simulación de auth (reemplazar con llamada real a GAS)
+            setTimeout(() => {
+                // Aquí iría: google.script.run.AUTH_validateUser(...)
+                // Por ahora, modo desarrollo:
+                window.SUITES_SESSION = { username: username, role: 'admin' };
+                document.getElementById('user-display').textContent = username;
+                showApp();
+            }, 800);
+        }
+
+        function logout() {
+            window.SUITES_SESSION = null;
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('app').style.display = 'none';
+            
+            // Limpiar iframes
+            ['dashboard', 'mensual', 'selector'].forEach(id => {
+                document.getElementById('iframe-' + id).src = 'about:blank';
+            });
+        }
+
+        function showApp() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            loadModule('dashboard');
+        }
+
+        // ===== NAVEGACIÓN =====
+        function switchTab(tabName, btnElement) {
+            // Actualizar tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            btnElement.classList.add('active');
+            
+            // Actualizar paneles
+            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            
+            currentTab = tabName;
+            
+            if (tabName !== 'upload') {
+                loadModule(tabName);
+            }
+        }
+
+        function loadModule(moduleName) {
+            const iframe = document.getElementById('iframe-' + moduleName);
+            const moduleUrls = {
+                dashboard: 'modules/dashboard.html',
+                mensual: 'modules/mensual.html',
+                selector: 'modules/selector.html'
+            };
+            
+            // En producción con GAS, usarás las URLs de despliegue
+            // Por ahora, cargamos el archivo local
+            iframe.src = moduleUrls[moduleName] || 'about:blank';
+        }
+
+        // ===== UPLOAD =====
+        const uploadZone = document.getElementById('upload-zone');
+        
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                processFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        function handleFile(event) {
+            if (event.target.files.length > 0) {
+                processFile(event.target.files[0]);
+            }
+        }
+
+        function processFile(file) {
+            const progress = document.getElementById('progress');
+            const fill = document.getElementById('progress-fill');
+            const text = document.getElementById('progress-text');
+            
+            progress.style.display = 'block';
+            fill.style.width = '30%';
+            text.textContent = 'Leyendo archivo...';
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                fill.style.width = '70%';
+                text.textContent = 'Procesando datos...';
+                
+                // Aquí iría: google.script.run.UPLOAD_processFile(...)
+                setTimeout(() => {
+                    fill.style.width = '100%';
+                    text.textContent = '¡Archivo procesado correctamente!';
+                    
+                    setTimeout(() => {
+                        progress.style.display = 'none';
+                        fill.style.width = '0%';
+                    }, 2000);
+                }, 1000);
+            };
+            
+            if (file.name.endsWith('.csv')) {
+                reader.readAsText(file);
+            } else {
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // ===== UTILIDADES =====
+        function showMessage(element, text, type) {
+            element.textContent = text;
+            element.className = 'message ' + type + ' show';
+            setTimeout(() => element.classList.remove('show'), 4000);
+        }
+    </script>
+</body>
+</html>

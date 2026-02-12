@@ -1076,3 +1076,139 @@ function getHistorialMediaSemanal(nombreAgente) {
     };
   }
 }
+
+// ===== SISTEMA DE AUTENTICACIÓN =====
+
+function AUTH_validateUser(credentialsJSON) {
+  try {
+    const creds = JSON.parse(credentialsJSON);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const authSheet = ss.getSheetByName('Auth');
+    
+    if (!authSheet) {
+      return JSON.stringify({ 
+        success: false, 
+        message: 'Sistema de autenticación no configurado' 
+      });
+    }
+    
+    // Buscar usuario
+    const data = authSheet.getDataRange().getValues();
+    const headers = data[0];
+    const userCol = headers.indexOf('usuario');
+    const passCol = headers.indexOf('password');
+    const roleCol = headers.indexOf('rol');
+    
+    if (userCol === -1 || passCol === -1) {
+      return JSON.stringify({ 
+        success: false, 
+        message: 'Estructura de Auth incorrecta' 
+      });
+    }
+    
+    // Hash simple de comparación (en producción usar mejor método)
+    const hashedInput = Utilities.computeDigest(
+      Utilities.DigestAlgorithm.MD5, 
+      creds.password
+    ).map(byte => (byte < 0 ? byte + 256 : byte).toString(16).padStart(2, '0')).join('');
+    
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][userCol] === creds.username && data[i][passCol] === hashedInput) {
+        return JSON.stringify({
+          success: true,
+          role: data[i][roleCol] || 'operador',
+          username: creds.username
+        });
+      }
+    }
+    
+    return JSON.stringify({ success: false });
+    
+  } catch (e) {
+    return JSON.stringify({ 
+      success: false, 
+      message: e.message 
+    });
+  }
+}
+
+// ===== CARGA DE ARCHIVOS =====
+
+function UPLOAD_processFile(fileData) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const datosSheet = ss.getSheetByName('Datos') || ss.insertSheet('Datos');
+    
+    let data = [];
+    
+    if (fileData.type === '.csv') {
+      // Parsear CSV simple
+      data = parseCSV(fileData.content);
+    } else {
+      // Para Excel, necesitaríamos usar Drive API o un parser más complejo
+      // Por ahora, indicamos que CSV está listo y Excel requiere paso extra
+      return JSON.stringify({
+        success: false,
+        message: 'Excel requiere procesamiento adicional. Por ahora usa CSV.'
+      });
+    }
+    
+    // Escribir en sheet (append o replace, según necesidad)
+    const lastRow = datosSheet.getLastRow();
+    
+    if (lastRow === 0) {
+      // Primera carga: escribir todo
+      datosSheet.getRange(1, 1, data.length, data[0].length).setValues(data);
+    } else {
+      // Append: agregar después de la última fila
+      datosSheet.getRange(lastRow + 1, 1, data.length, data[0].length).setValues(data);
+    }
+    
+    // Log de quién subió qué
+    logUpload(fileData.user, fileData.filename, data.length);
+    
+    return JSON.stringify({
+      success: true,
+      message: `Procesadas ${data.length} filas correctamente`
+    });
+    
+  } catch (e) {
+    return JSON.stringify({
+      success: false,
+      message: e.message
+    });
+  }
+}
+
+function parseCSV(csvText) {
+  const lines = csvText.split('\n');
+  const result = [];
+  
+  for (let line of lines) {
+    if (line.trim()) {
+      // Parseo simple: separar por coma, manejar comillas básicas
+      const row = line.split(',').map(cell => {
+        cell = cell.trim();
+        if (cell.startsWith('"') && cell.endsWith('"')) {
+          cell = cell.slice(1, -1);
+        }
+        return cell;
+      });
+      result.push(row);
+    }
+  }
+  
+  return result;
+}
+
+function logUpload(user, filename, rows) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let logSheet = ss.getSheetByName('LogUploads');
+  
+  if (!logSheet) {
+    logSheet = ss.insertSheet('LogUploads');
+    logSheet.appendRow(['Fecha', 'Usuario', 'Archivo', 'Filas']);
+  }
+  
+  logSheet.appendRow([new Date(), user, filename, rows]);
+}

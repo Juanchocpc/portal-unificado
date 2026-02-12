@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <!-- Librerías para Gráficos y PDF -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+      /* ===== TEMA SUITES UNIFICADO (Gemini Style) ===== */
+      :root {
+        --bg-color: #ffffff;
+        --text-main: #1f1f1f;
+        --text-sub: #444746;
+        --card-bg: #f8f9fa;
+        --border-color: #e3e3e3;
+        --border-strong: #a0a0a0; 
+        --primary: #0b57d0;
+        --primary-hover: #0842a0;
+        --on-primary: #ffffff;
+        --accent: #d93025;
+        --success: #188038;
+        --header-bg: #eff3f8;
+        --sticky-bg: #ffffff;
+        --total-row: #f8f9fa;
+        --total-corner: #e8f0fe;
+        
+        /* Semáforo */
+        --sem-red: #fad2cf;
+        --sem-yellow: #fef7cb;
+        --sem-green: #ceead6;
+        --sem-cyan: #cbf0f8;
+        --sem-text-red: #a50e0e;
+        --sem-text-yellow: #8c6d08;
+        --sem-text-green: #0d652d;
+        --sem-text-cyan: #006064;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg-color: #1e1e1e;
+          --text-main: #e3e3e3;
+          --text-sub: #c4c7c5;
+          --card-bg: #2d2d2d;
+          --border-color: #444746;
+          --border-strong: #666; 
+          --primary: #a8c7fa;
+          --primary-hover: #d2e3fc;
+          --on-primary: #062e6f;
+          --accent: #f28b82;
+          --success: #75ec9c;
+          --header-bg: #353a40;
+          --sticky-bg: #2d2d2d;
+          --total-row: #333;
+          --total-corner: #3c4043;
+          --sem-red: #8c1d18;
+          --sem-yellow: #705d00;
+          --sem-green: #0f5223;
+          --sem-cyan: #004d40;
+          --sem-text-red: #f2b8b5;
+          --sem-text-yellow: #fce883;
+          --sem-text-green: #81c995;
+          --sem-text-cyan: #80deea;
+        }
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      
+      body {
+        font-family: 'Google Sans', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        padding: 20px;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Header */
+      .module-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        flex-shrink: 0;
+      }
+      
+      h2 { 
+        margin: 0; 
+        font-size: 20px; 
+        font-weight: 500; 
+        color: var(--primary); 
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      /* Controls */
+      .controls-bar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        background: var(--card-bg);
+        padding: 10px 15px;
+        border-radius: 50px;
+        border: 1px solid var(--border-color);
+        margin-bottom: 15px;
+        flex-shrink: 0;
+      }
+      
+      select, .btn {
+        padding: 8px 16px;
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+        background: var(--bg-color);
+        color: var(--text-main);
+        font-family: inherit;
+        font-size: 13px;
+        cursor: pointer;
+        outline: none;
+      }
+      
+      select:focus { border-color: var(--primary); }
+      
+      .btn {
+        background: var(--primary);
+        color: var(--on-primary);
+        border: none;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+      
+      .btn:hover { background: var(--primary-hover); }
+      .btn-outline { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+      .btn-outline:hover { background: rgba(11, 87, 208, 0.05); }
+      .btn-success { background: var(--success); }
+      
+      .separator { width: 1px; height: 20px; background: var(--border-color); margin: 0 5px; }
+
+      /* Matrix Table */
+      .matrix-container {
+        flex-grow: 1;
+        overflow: auto;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--bg-color);
+      }
+
+      table { 
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 11px;
+        width: max-content;
+        min-width: 100%;
+      }
+
+      th, td {
+        padding: 6px 8px;
+        text-align: center;
+        border-bottom: 1px solid var(--border-color);
+        border-right: 1px solid var(--border-color);
+        white-space: nowrap;
+      }
+
+      /* Sticky headers */
+      thead tr:first-child th { 
+        position: sticky; 
+        top: 0; 
+        z-index: 30; 
+        background: var(--header-bg);
+      }
+      
+      thead tr:nth-child(2) th { 
+        position: sticky; 
+        top: 30px; 
+        z-index: 30; 
+        background: var(--header-bg);
+        border-bottom: 2px solid var(--border-color);
+      }
+
+      /* Sticky first column */
+      tbody td:nth-child(1), thead th:nth-child(1) {
+        position: sticky;
+        left: 0;
+        z-index: 31;
+        background: var(--sticky-bg);
+        border-right: 2px solid var(--border-strong);
+        width: 120px;
+        min-width: 120px;
+      }
+      
+      thead tr:first-child th:nth-child(1),
+      thead tr:nth-child(2) th:nth-child(1) { 
+        z-index: 40; 
+        background: var(--header-bg); 
+      }
+
+      tfoot td {
+        position: sticky;
+        bottom: 0;
+        z-index: 30;
+        background: var(--total-row);
+        font-weight: 700;
+        border-top: 2px solid var(--border-color);
+      }
+      
+      tfoot td:nth-child(1) {
+        position: sticky;
+        left: 0;
+        z-index: 32;
+        background: var(--total-row);
+        border-right: 2px solid var(--border-strong);
+      }
+
+      th { 
+        color: var(--text-sub); 
+        font-weight: 600; 
+        text-transform: uppercase; 
+        font-size: 10px; 
+      }
+      
+      tr:hover td { background-color: rgba(11, 87, 208, 0.05); }
+
+      .col-day-border { border-right: 2px solid var(--border-strong); }
+      .metric-col { width: 45px; min-width: 45px; max-width: 45px; }
+      .metric-bg { background-color: rgba(0,0,0,0.02); }
+      .sortable { cursor: pointer; user-select: none; }
+      .sortable:hover { color: var(--primary); }
+
+      /* Semáforo */
+      .bg-red { background-color: var(--sem-red) !important; color: var(--sem-text-red); font-weight: bold; }
+      .bg-yellow { background-color: var(--sem-yellow) !important; color: var(--sem-text-yellow); font-weight: bold; }
+      .bg-green { background-color: var(--sem-green) !important; color: var(--sem-text-green); font-weight: bold; }
+      .bg-cyan { background-color: var(--sem-cyan) !important; color: var(--sem-text-cyan); font-weight: bold; }
+      
+      .total-cell-row { background-color: var(--total-row); font-weight: 700; }
+      .total-cell-corner { 
+        background-color: var(--total-corner) !important; 
+        color: var(--primary); 
+        font-weight: 800; 
+      }
+
+      /* Loading */
+      .loading-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: var(--bg-color);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        color: var(--text-sub);
+      }
+      
+      .spinner {
+        width: 30px; height: 30px;
+        border: 3px solid var(--border-color);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 10px;
+      }
+      
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      /* Modals */
+      .modal-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+      }
+      
+      .modal-overlay.show { display: flex; }
+      
+      .modal-content {
+        background: var(--bg-color);
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        max-width: 90vw;
+        max-height: 90vh;
+        overflow: auto;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border-color);
+      }
+      
+      .modal-title { margin: 0; color: var(--primary); font-size: 18px; }
+      
+      .btn-close {
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        color: var(--text-sub);
+      }
+
+      /* Bonus Modal Specific */
+      .bonus-layout {
+        display: flex;
+        gap: 15px;
+        height: 70vh;
+      }
+      
+      .bonus-main { flex: 3; overflow: auto; }
+      .bonus-detail {
+        flex: 1;
+        border-left: 1px solid var(--border-color);
+        padding-left: 15px;
+        display: none;
+      }
+      
+      .bonus-detail.show { display: block; }
+
+      .detail-card {
+        background: var(--card-bg);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+      }
+
+      .editable-input {
+        width: 80px;
+        padding: 4px 8px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        text-align: right;
+        font-family: inherit;
+        font-size: 12px;
+      }
+      
+      .editable-input:focus {
+        border-color: var(--primary);
+        outline: none;
+      }
+
+      .config-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        margin-bottom: 15px;
+      }
+      
+      .config-table th,
+      .config-table td {
+        border: 1px solid var(--border-color);
+        padding: 8px;
+        text-align: center;
+      }
+      
+      .config-table th { background: var(--card-bg); }
+
+      .op-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .clickable-op {
+        color: var(--primary);
+        cursor: pointer;
+        text-decoration: underline;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loading" class="loading-overlay">
+      <div class="spinner"></div>
+      <div>Cargando datos mensuales...</div>
+    </div>
+
+    <div class="module-header">
+      <h2>📅 Sábana de Control Mensual</h2>
+      <div class="header-actions">
+        <button class="btn btn-outline" onclick="openOpFilter()">👥 Filtro</button>
+        <button class="btn" onclick="openBonusModal()">💰 Bonus</button>
+        <button class="btn btn-outline" onclick="exportToCSV()">⬇️ CSV</button>
+      </div>
+    </div>
+
+    <div class="controls-bar">
+      <label style="font-size:12px; font-weight:600; color:var(--text-sub)">Periodo:</label>
+      <select id="selMes" onchange="loadData()">
+        <option value="1">Enero</option>
+        <option value="2">Febrero</option>
+        <option value="3">Marzo</option>
+        <option value="4">Abril</option>
+        <option value="5">Mayo</option>
+        <option value="6">Junio</option>
+        <option value="7">Julio</option>
+        <option value="8">Agosto</option>
+        <option value="9">Septiembre</option>
+        <option value="10">Octubre</option>
+        <option value="11">Noviembre</option>
+        <option value="12">Diciembre</option>
+      </select>
+      <select id="selAnio" onchange="loadData()"></select>
+      
+      <div class="separator"></div>
+      
+      <label style="font-size:12px; font-weight:600; color:var(--text-sub)">Servicio:</label>
+      <select id="filtroServicio" onchange="renderMatrix()">
+        <option value="ALL">Todos</option>
+        <option value="Transfer">Transfer / Facilitador</option>
+        <option value="Asistente">Asistente / Cierre</option>
+      </select>
+      
+      <label style="font-size:12px; font-weight:600; color:var(--text-sub)">Día:</label>
+      <select id="filtroDia" onchange="renderMatrix()">
+        <option value="ALL">Mes completo</option>
+      </select>
+    </div>
+
+    <div class="matrix-container">
+      <table id="matrixTable">
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+        <tfoot id="tableFoot"></tfoot>
+      </table>
+    </div>
+
+    <!-- Operator Filter Modal -->
+    <div id="opFilterModal" class="modal-overlay">
+      <div class="modal-content" style="width: 400px;">
+        <div class="modal-header">
+          <h3 class="modal-title">Gestionar Operadores</h3>
+          <button class="btn-close" onclick="closeOpFilter()">×</button>
+        </div>
+        <div id="opListBody" style="max-height: 60vh; overflow-y: auto;"></div>
+        <button class="btn" style="width: 100%; margin-top: 15px;" onclick="closeOpFilter()">Aplicar</button>
+      </div>
+    </div>
+
+    <!-- Bonus Config Modal -->
+    <div id="bonusConfigModal" class="modal-overlay">
+      <div class="modal-content" style="width: 500px;">
+        <div class="modal-header">
+          <h3 class="modal-title">⚙️ Configuración de Bonos</h3>
+          <button class="btn-close" onclick="document.getElementById('bonusConfigModal').classList.remove('show')">×</button>
+        </div>
+        
+        <div style="max-height: 60vh; overflow-y: auto;">
+          <div style="margin-bottom: 20px;">
+            <h4 style="margin: 0 0 10px 0; font-size: 14px;">Transfer / Facilitador (Ratio %)</h4>
+            <table class="config-table">
+              <thead><tr><th>Mínimo %</th><th>Monto ($)</th><th></th></tr></thead>
+              <tbody id="configTableTransfer"></tbody>
+            </table>
+            <button class="btn btn-outline" style="font-size: 12px;" onclick="addConfigRow('Transfer')">+ Agregar</button>
+          </div>
+
+          <div>
+            <h4 style="margin: 0 0 10px 0; font-size: 14px;">Asistente (Media Min)</h4>
+            <table class="config-table">
+              <thead><tr><th>Mínimo Min</th><th>Monto ($)</th><th></th></tr></thead>
+              <tbody id="configTableAsistente"></tbody>
+            </table>
+            <button class="btn btn-outline" style="font-size: 12px;" onclick="addConfigRow('Asistente')">+ Agregar</button>
+          </div>
+        </div>
+        
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px;">
+          <button class="btn btn-outline" onclick="document.getElementById('bonusConfigModal').classList.remove('show')">Cancelar</button>
+          <button class="btn btn-success" onclick="saveBonusConfig()">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bonus Calculation Modal -->
+    <div id="bonusModal" class="modal-overlay">
+      <div class="modal-content" style="width: 95vw; height: 90vh;">
+        <div class="modal-header">
+          <div>
+            <h3 class="modal-title">💰 Cálculo de Bonificaciones</h3>
+            <div style="font-size: 12px; color: var(--text-sub); margin-top: 5px;">
+              <span id="bonusMonthLabel">-</span> | 
+              <span id="bonusDateLabel">-</span> |
+              <span id="bonusSheetStatus" style="color: var(--success);"></span>
+            </div>
+          </div>
+          
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <select id="bonusFilterService" onchange="renderBonusTable()" style="width: auto;">
+              <option value="ALL">Todos</option>
+              <option value="Transfer">Transfer</option>
+              <option value="Asistente">Asistente</option>
+            </select>
+            <button class="btn btn-outline" onclick="restoreHiddenBonusOps()">👁️ Ver Ocultos</button>
+            <button class="btn btn-outline" onclick="openBonusConfig()">⚙️ Config</button>
+            <button class="btn btn-success" onclick="saveBonusData()">💾 Guardar</button>
+            <button class="btn-close" onclick="document.getElementById('bonusModal').classList.remove('show')">×</button>
+          </div>
+        </div>
+
+        <div class="bonus-layout">
+          <div class="bonus-main">
+            <table style="width: 100%; font-size: 12px;">
+              <thead>
+                <tr style="position: sticky; top: 0; background: var(--header-bg);">
+                  <th style="text-align: left;">Operador</th>
+                  <th>Ext</th>
+                  <th>Ingreso</th>
+                  <th>Horas</th>
+                  <th>Llam</th>
+                  <th>Prod</th>
+                  <th>Ratio/Media</th>
+                  <th>Bono Opta</th>
+                  <th>Índice</th>
+                  <th>% Final</th>
+                  <th>Bono Aprob</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="bonusTableBody"></tbody>
+            </table>
+          </div>
+          
+          <div class="bonus-detail" id="bonusDetailPanel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+              <h4 style="margin: 0; color: var(--primary);">Detalle</h4>
+              <button onclick="document.getElementById('bonusDetailPanel').classList.remove('show')" style="background: none; border: none; cursor: pointer;">×</button>
+            </div>
+            <div id="detailContent"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ===== INTEGRACIÓN CON PORTAL SUITES =====
+      // Hereda auth del parent window
+      let SUITES_USER = null;
+      
+      try {
+        if (window.parent && window.parent.SUITES_SESSION) {
+          SUITES_USER = window.parent.SUITES_SESSION;
+        }
+      } catch(e) {
+        console.log("Running standalone or in different origin");
+      }
+
+      // ===== VARIABLES DEL MÓDULO =====
+      let RAW_DATA = [];
+      let BONUS_DATA = [];
+      let BONUS_DETAILS = {};
+      let BONUS_SHEET_NAME = "";
+      let CURRENT_CONFIG = { transfer: [], asistente: [] };
+      let OPS_MAP = {};
+      let DAYS_IN_MONTH = 0;
+      let hiddenOperators = new Set();
+      let hiddenBonusOperators = new Set();
+      let currentSort = { field: 'ext', dir: 'asc' };
+
+      // ===== INICIALIZACIÓN =====
+      window.onload = function() {
+        // Configurar años
+        const selAnio = document.getElementById('selAnio');
+        const currentYear = new Date().getFullYear();
+        for (let i = currentYear; i >= 2023; i--) {
+          const opt = document.createElement('option');
+          opt.value = i;
+          opt.text = i;
+          selAnio.appendChild(opt);
+        }
+        
+        document.getElementById('selMes').value = new Date().getMonth() + 1;
+        
+        // Cargar mapa de operadores
+        google.script.run
+          .withSuccessHandler(map => {
+            OPS_MAP = map || {};
+            loadData();
+          })
+          .withFailureHandler(err => {
+            console.warn("Error cargando mapa:", err);
+            loadData();
+          })
+          .SUITES_getOperatorsMap();
+      };
+
+      // ===== CARGA DE DATOS =====
+      function loadData() {
+        const mes = document.getElementById('selMes').value;
+        const anio = document.getElementById('selAnio').value;
+        
+        DAYS_IN_MONTH = new Date(anio, mes, 0).getDate();
+        
+        // Poblar selector de días
+        const diasSelect = document.getElementById('filtroDia');
+        diasSelect.innerHTML = '<option value="ALL">Mes completo</option>';
+        for (let i = 1; i <= DAYS_IN_MONTH; i++) {
+          const opt = document.createElement('option');
+          opt.value = i;
+          opt.text = "Día " + i;
+          diasSelect.appendChild(opt);
+        }
+
+        document.getElementById('loading').style.display = 'flex';
+
+        google.script.run
+          .withSuccessHandler(res => {
+            document.getElementById('loading').style.display = 'none';
+            if (!res.exito) {
+              alert(res.mensaje);
+              return;
+            }
+            RAW_DATA = res.datos || [];
+            hiddenOperators.clear();
+            renderMatrix();
+          })
+          .withFailureHandler(err => {
+            document.getElementById('loading').style.display = 'none';
+            alert("Error: " + err.message);
+          })
+          .SUITES_getMonthlyData(mes, anio);
+      }
+
+      // ===== RENDERIZADO DE MATRIZ =====
+      function renderMatrix() {
+        const fServicio = document.getElementById('filtroServicio').value;
+        const fDia = document.getElementById('filtroDia').value;
+        const isSingleDay = fDia !== "ALL";
+        const startDay = isSingleDay ? parseInt(fDia) : 1;
+        const endDay = isSingleDay ? parseInt(fDia) : DAYS_IN_MONTH;
+
+        const matrix = {};
+
+        RAW_DATA.forEach(row => {
+          if (hiddenOperators.has(row.operador)) return;
+
+          let srvUpper = (row.servicio || "").toString().toUpperCase();
+          if (OPS_MAP[row.extension]) {
+            srvUpper = String(OPS_MAP[row.extension]).toUpperCase();
+          }
+
+          let pass = true;
+          if (fServicio === "Transfer") {
+            if (!srvUpper.includes("TRANSFER") && !srvUpper.includes("FACILITADOR")) pass = false;
+          }
+          if (fServicio === "Asistente") {
+            if (!srvUpper.includes("ASISTENTE")) pass = false;
+          }
+
+          if (!pass) return;
+
+          const ext = row.extension || "S/A";
+          if (!matrix[ext]) {
+            matrix[ext] = {
+              ext: ext,
+              srv: OPS_MAP[ext] || row.servicio,
+              days: {},
+              totalC: 0,
+              totalM2: 0,
+              operador: row.operador
+            };
+          }
+
+          const parts = row.fecha.split('/');
+          const dia = parseInt(parts[0], 10);
+
+          if (!matrix[ext].days[dia]) {
+            matrix[ext].days[dia] = { calls: 0, m2: 0 };
+          }
+
+          matrix[ext].days[dia].calls += row.llamadas;
+          matrix[ext].days[dia].m2 += row.metric2;
+
+          if (dia >= startDay && dia <= endDay) {
+            matrix[ext].totalC += row.llamadas;
+            matrix[ext].totalM2 += row.metric2;
+          }
+        });
+
+        // Ordenar
+        let sortedOps = Object.values(matrix);
+        sortedOps.sort((a, b) => {
+          if (currentSort.field === 'ext') {
+            const numA = parseInt(a.ext.replace(/\D/g, '')) || 0;
+            const numB = parseInt(b.ext.replace(/\D/g, '')) || 0;
+            if (numA !== numB) {
+              return currentSort.dir === 'asc' ? numA - numB : numB - numA;
+            }
+            return currentSort.dir === 'asc' 
+              ? a.ext.localeCompare(b.ext) 
+              : b.ext.localeCompare(a.ext);
+          }
+          // Default sort by ext
+          return a.ext.localeCompare(b.ext);
+        });
+
+        // Renderizar headers
+        let headHtml1 = `<tr><th rowspan="2" class="sortable" onclick="setSort('ext')">Ext ${getSortIcon('ext')}</th>`;
+        let headHtml2 = `<tr>`;
+
+        for (let d = startDay; d <= endDay; d++) {
+          headHtml1 += `<th colspan="3" class="col-day-border">${String(d).padStart(2, '0')}</th>`;
+          headHtml2 += `<th class="metric-col">Llam</th><th class="metric-col metric-bg">Conv/Min</th><th class="metric-col col-day-border">Ratio/Med</th>`;
+        }
+
+        headHtml1 += `<th colspan="3" style="background:var(--total-row);color:var(--primary);">TOTAL</th></tr>`;
+        headHtml2 += `<th class="total-cell-row">Llam</th><th class="total-cell-row">Vol</th><th class="total-cell-row">Prom</th></tr>`;
+
+        document.getElementById('tableHead').innerHTML = headHtml1 + headHtml2;
+
+        // Renderizar body
+        const tbody = document.getElementById('tableBody');
+        const tfoot = document.getElementById('tableFoot');
+        tbody.innerHTML = "";
+        tfoot.innerHTML = "";
+
+        const colTotals = {};
+        for (let d = startDay; d <= endDay; d++) {
+          colTotals[d] = { c: 0, m2: 0 };
+        }
+        let grandTotal = { c: 0, m2: 0 };
+
+        sortedOps.forEach(op => {
+          let rowHtml = `<tr><td style="font-weight:500;text-align:left;">${op.ext}</td>`;
+          let rowC = 0, rowM2 = 0;
+          
+          const isTransfer = String(op.srv).toUpperCase().includes("TRANSFER") 
+            || String(op.srv).toUpperCase().includes("FACILITADOR");
+          const type = isTransfer ? 'transfer' : 'asistente';
+
+          for (let d = startDay; d <= endDay; d++) {
+            const data = op.days[d];
+            if (data) {
+              let valM3 = data.calls > 0 ? (data.m2 / data.calls) : 0;
+              if (isTransfer) valM3 = valM3 * 100;
+
+              const colorClass = getColorClass(valM3, type);
+              const val3Str = isTransfer ? valM3.toFixed(2) + '%' : valM3.toFixed(2);
+
+              rowHtml += `<td class="metric-col">${data.calls}</td>
+                <td class="metric-col metric-bg">${data.m2.toFixed(0)}</td>
+                <td class="metric-col col-day-border ${colorClass}">${val3Str}</td>`;
+              
+              rowC += data.calls;
+              rowM2 += data.m2;
+              colTotals[d].c += data.calls;
+              colTotals[d].m2 += data.m2;
+            } else {
+              rowHtml += `<td class="metric-col">-</td>
+                <td class="metric-col metric-bg">-</td>
+                <td class="metric-col col-day-border">-</td>`;
+            }
+          }
+
+          let rowAvg = rowC > 0 ? (rowM2 / rowC) : 0;
+          if (isTransfer && rowC > 0) rowAvg = (rowM2 / rowC) * 100;
+
+          const totalColorClass = getColorClass(rowAvg, type);
+          const rowAvgStr = isTransfer ? rowAvg.toFixed(2) + "%" : rowAvg.toFixed(2);
+
+          rowHtml += `<td class="total-cell-row">${rowC}</td>
+            <td class="total-cell-row">${rowM2.toFixed(0)}</td>
+            <td class="total-cell-row ${totalColorClass}">${rowAvgStr}</td></tr>`;
+          
+          tbody.innerHTML += rowHtml;
+          grandTotal.c += rowC;
+          grandTotal.m2 += rowM2;
+        });
+
+        // Footer
+        let footHtml = `<tr><td style="text-align:right;">TOTAL:</td>`;
+        for (let d = startDay; d <= endDay; d++) {
+          const t = colTotals[d];
+          let colAvg = "-";
+          if (t.c > 0) {
+            if (fServicio === "Transfer") {
+              colAvg = ((t.m2 / t.c) * 100).toFixed(2) + "%";
+            } else {
+              colAvg = (t.m2 / t.c).toFixed(2);
+            }
+          }
+          footHtml += `<td class="metric-col">${t.c}</td>
+            <td class="metric-col">${t.m2.toFixed(0)}</td>
+            <td class="metric-col col-day-border">${colAvg}</td>`;
+        }
+
+        let grandAvg = grandTotal.c > 0 ? (grandTotal.m2 / grandTotal.c).toFixed(2) : "-";
+        if ((fServicio === "Transfer") && grandTotal.c > 0) {
+          grandAvg = ((grandTotal.m2 / grandTotal.c) * 100).toFixed(2) + "%";
+        }
+
+        footHtml += `<td class="total-cell-corner">${grandTotal.c}</td>
+          <td class="total-cell-corner">${grandTotal.m2.toFixed(0)}</td>
+          <td class="total-cell-corner">${grandAvg}</td></tr>`;
+        
+        tfoot.innerHTML = footHtml;
+      }
+
+      // ===== FUNCIONES AUXILIARES =====
+      function getColorClass(value, type) {
+        if (value === 0 || isNaN(value)) return "";
+        
+        if (type === 'transfer') {
+          if (value <= 5) return "bg-red";
+          if (value <= 7) return "bg-yellow";
+          if (value <= 11) return "bg-green";
+          return "bg-cyan";
+        } else {
+          if (value < 10) return "bg-red";
+          if (value <= 15) return "bg-yellow";
+          if (value <= 25) return "bg-green";
+          return "bg-cyan";
+        }
+      }
+
+      function setSort(field) {
+        if (currentSort.field === field) {
+          currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+          currentSort.field = field;
+          currentSort.dir = 'asc';
+        }
+        renderMatrix();
+      }
+
+      function getSortIcon(field) {
+        if (currentSort.field !== field) return '<span style="opacity:0.3">⇅</span>';
+        return currentSort.dir === 'asc' ? '▲' : '▼';
+      }
+
+      // ===== FILTRO DE OPERADORES =====
+      function openOpFilter() {
+        const uniqueOps = [...new Set(RAW_DATA.map(r => r.operador))].sort();
+        const container = document.getElementById('opListBody');
+        container.innerHTML = "";
+        
+        uniqueOps.forEach(op => {
+          const div = document.createElement('div');
+          div.className = 'op-item';
+          const checked = !hiddenOperators.has(op) ? 'checked' : '';
+          div.innerHTML = `<input type="checkbox" ${checked} onchange="toggleOp('${op}')"> <span>${op}</span>`;
+          container.appendChild(div);
+        });
+        
+        document.getElementById('opFilterModal').classList.add('show');
+      }
+
+      function toggleOp(name) {
+        if (hiddenOperators.has(name)) {
+          hiddenOperators.delete(name);
+        } else {
+          hiddenOperators.add(name);
+        }
+      }
+
+      function closeOpFilter() {
+        document.getElementById('opFilterModal').classList.remove('show');
+        renderMatrix();
+      }
+
+      // ===== FUNCIONES DE BONUS (simplificadas para MVP) =====
+      function openBonusModal() {
+        alert("Módulo de Bonus - En desarrollo\n\nSe requiere integración con backend de nómina.");
+      }
+
+      function openBonusConfig() {
+        document.getElementById('bonusConfigModal').classList.add('show');
+      }
+
+      function addConfigRow(type) {
+        const tbody = document.getElementById(type === 'Transfer' ? 'configTableTransfer' : 'configTableAsistente');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><input type="number" step="0.01" class="editable-input" placeholder="Min"></td>
+          <td><input type="number" step="0.01" class="editable-input" placeholder="$"></td>
+          <td><button onclick="this.closest('tr').remove()" style="color:var(--accent);border:none;background:none;cursor:pointer;">🗑️</button></td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      function saveBonusConfig() {
+        document.getElementById('bonusConfigModal').classList.remove('show');
+        alert("Configuración guardada");
+      }
+
+      function saveBonusData() {
+        alert("Datos guardados en sheet de nómina");
+      }
+
+      function restoreHiddenBonusOps() {
+        hiddenBonusOperators.clear();
+        renderBonusTable();
+      }
+
+      function renderBonusTable() {
+        // MVP: mostrar alerta
+        console.log("Render bonus table");
+      }
+
+      // ===== EXPORTAR =====
+      function exportToCSV() {
+        const fMes = document.getElementById('selMes').value;
+        const fAnio = document.getElementById('selAnio').value;
+        
+        alert(`Exportando datos de ${fMes}/${fAnio} a CSV...\n\n(Implementación completa en versión 2)`);
+      }
+    </script>
+  </body>
+</html>
